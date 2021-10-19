@@ -1,0 +1,49 @@
+a {
+  color: #e76f51;
+  text-decoration: none;
+}
+
+.remark-slide-content {
+    font-size: 25px;
+    padding: 1em 4em 1em 4em;
+}
+
+.remark-slide-content h1 {
+  font-size: 40px;
+}
+
+.my-one-page-font {
+  font-size: 40px;
+}
+
+.title-slide {
+  background: #264653;
+}
+.title-slide h1, h2, h3 {
+  color: white;
+  text-align: left;
+}
+.title-slide h1 {
+  font-size: 50px;
+}
+
+h1, h2, h3 {
+  color: #264653;
+  text-align: left; 
+}
+
+
+
+table {
+  margin: auto;
+  border-top: 1px solid #222;
+  border-bottom: 1px solid #222;
+  font-size: 20px;
+}
+table thead th { 
+  border-bottom: 1px solid #222; 
+  font-size: 25px;
+}
+th, td { padding: 2px 5px; }
+th { font-size: 25px;}
+thead, tfoot, tr:nth-child(even) { background: #f0f0f0 }
