@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Data for farming</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Benjamin Nowak" />
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/bn.css" type="text/css" />
+    <link rel="stylesheet" href="css/bn-fonts.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Data for farming
+## <strong>2.</strong> Data exploration<br>and mapping
+### Benjamin Nowak
+### December 2021
+
+---
+
+
+background-image: url(fig/back/hill.jpg)
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Getting started** &lt;/span&gt;
+
+### Installation of **R** and **RStudio**
+
+---
+
+# Getting started
+
+
+1. [Download R](https://cran.r-project.org/) on CRAN
+&gt; *"The “Comprehensive R Archive Network” (CRAN) is a collection of sites which carry identical material, consisting of the R distribution(s), the contributed extensions, documentation for R, and binaries."*
+
+2. [Download R Studio](https://www.rstudio.com/products/rstudio/download/#download)
+&gt; *"RStudio is an integrated development environment (IDE) for R. It includes a console, syntax-highlighting editor that supports direct code execution, as well as tools for plotting, history, debugging and workspace management."*
+
+  - Choose 'Free RStudio Desktop' to run RStudio on your local machine
+
+---
+
+# Getting started
+
+- Once RStudio is installed, we are ready to create a new **Project**
+
+  - *File &gt; New Project &gt; New Directory*
+.center[
+  &lt;img src="fig/R/projects_new.png" width=50%&gt;&lt;/img&gt;
+]
+
+- Doing so, the **current working directory** is set to the **project directory** (where we can for example store the data sets related to this project in a **'Data'** folder)
+
+---
+
+# Getting started
+
+.center[
+  &lt;img src="fig/R/Rproj.png" width=50%&gt;&lt;/img&gt;
+]
+
+.footnote[
+**Source:** [Musings on R (Martin Chan)](https://martinctc.github.io/blog/rstudio-projects-and-working-directories-a-beginner's-guide/)
+]
+
+---
+
+# Getting started
+
+- We can create **a new script** inside this project
+
+  - *File &gt; New File &gt; R Script*
+  
+- Although RStudio keeps track of the changes made to the script, we will save it before we start 
+
+  - *File &gt; Save as*
+  
+  - You may save it in a **'Script'** folder, as suggested in the previous slide
+
+&lt;br&gt;
+
+--
+
+.center[&lt;span style='font-size:30px; color:#2a9d8f;'&gt;**We are now ready to process data!**&lt;/span&gt;]
+
+---
+
+background-image: url(fig/back/sheep.jpg)
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **First example** &lt;/span&gt;
+
+### World's leading milk producers
+
+---
+
+# Load packages
+
+- **The [{tidyverse}](https://www.tidyverse.org/):** Collection of R packages for data science. All packages share an underlying design philosophy, grammar, and data structures.
+
+![](fig/R/tidyverse.png)
+
+.footnote[
+**Source** [Barnier, 2021](https://juba.github.io/tidyverse/index.html)
+]
+
+---
+
+# Load packages
+
+- **The [{tidyverse}](https://www.tidyverse.org/):** Collection of R packages for data science. All packages share an underlying design philosophy, grammar, and data structures.
+
+- First lines of code will be to install and load these extensions in our R session
+
+
+```r
+# Install tidyverse (to do only once)
+# install.packages("tidyverse")
+
+# Load tidyverse (to repeat at each session)
+library(tidyverse)            
+```
+         
+---
+
+# Import data
+
+- Data in this tutorial are related to **worlwide milk production** and **milk trades** (since 1990).
+  - Data sets extacted from the [Food and Agriculture Organization (FAO)](https://www.fao.org/statistics/en/) data base.
+  
+- With the [{tidyverse}](https://www.tidyverse.org/), we may use [{readr}](https://readr.tidyverse.org/) to load data sets into our session
+  - Compared to base functions, {readr} functions are much faster to import data sets, and include a progress bar for large data set that take a longer time to load
+
+---
+
+# Import data
+
+- The data are available online, and can be loaded directly into R, without downloading
+  - You may copy/paste [this link]('https://raw.githubusercontent.com/BjnNowak/CultivatedPlanet/main/data/FAO_AnimalProductivity_subset.csv') inside **read_csv()** to import the data
+
+
+```r
+# Import data
+data &lt;- readr::read_csv(
+  'https://raw.githubusercontent.com/BjnNowak/CultivatedPlanet/main/data/FAO_AnimalProductivity_subset.csv'
+)
+# To take a look at 3 first lines
+# head(data,3)        
+```
+
+
+---
+
+# Data structure
+
+- This data table is already close to the 'tidy' syntax and will require little modification
+
+.center[
+  &lt;img src="fig/R/tidydata_1.jpg" width=70%&gt;&lt;/img&gt;
+]
+
+.footnote[ 
+  **Picture** [Alison Horst](https://github.com/allisonhorst) 
+]
+
+---
+
+# Data processing
+
+- Thanks to the pipe operator (**%&gt;%**), we may perform a sequence of actions on the same data set.
+
+- Most of table modifications are supported by the [{dplyr}](https://dplyr.tidyverse.org/) package. 
+  - Below some examples of data processing:
+
+
+```r
+data&lt;-data%&gt;%
+  # Rename columns with space
+  dplyr::rename(
+    # New name = Old name
+    AreaCode = 'Area Code',
+    ItemCode = 'Item Code',
+    ElementCode = 'Element Code'
+  )%&gt;%
+  # Suppress column that we don't need
+  dplyr::select(-'Year Code')%&gt;%
+  # Remove one row
+  dplyr::filter(Area!='China, mainland')
+```
+
+---
+
+# Data processing
+
+- In this example, we want to identify the main milk producers. First, we must identify the factors corresponding to milk production in our dataset. 
+
+- To do so, we will detect factors with 'milk' inside their names with [**str_detect()**](https://www.rdocumentation.org/packages/stringr/versions/1.4.0/topics/str_detect), then extract the name of these factors with [**pull()**](https://dplyr.tidyverse.org/reference/pull.html) and store them in a *'milks'* vector for further filtering
+
+
+
+```r
+milks&lt;-data%&gt;%
+  # Keep only one 'case study'
+  filter(Area=='World'&amp;Year==2018)%&gt;%
+  # Keep only milk products
+  filter(
+    stringr::str_detect(
+      Item,               # Column to search
+      fixed(
+        'milk',           # Pattern to search
+        ignore_case=TRUE  # To ignore case
+  )))%&gt;%
+  dplyr::pull(Item)       # Column to extract
+```
+---
+
+# Data processing
+
+- We may now use this vector to filter our data set and keep only rows related to **milk production of each country** since 1990.
+
+
+```r
+countries &lt;- data%&gt;%
+  # Keep only rows related to milk production
+  filter(Item %in% milks)%&gt;%
+  # Keep only data at country scale
+  # (Code &gt;5000 for continental &amp; world statistics)
+  filter(AreaCode&lt;5000)
+```
+
+---
+
+# Statistics for each country
+
+- To calculate statistics for each country, we need to convert our table into a 'grouped' table with [**group_by()**](https://dplyr.tidyverse.org/reference/group_by.html)
+
+.pull-left[
+
+  &lt;img src="fig/R/group_by_ungroup.png" width=100%&gt;&lt;/img&gt;
+   
+   **Picture** [Alison Horst](https://github.com/allisonhorst)
+]
+
+.pull-right[
+
+- Look of the table will not change but the functions will be applied per group (not on the whole table)
+
+- After **group_by()**, two possibilities: add a new column with **mutate()** OR create a resume of the statistics with **summarize()**
+
+]
+
+- Finally, use **ungroup()** to remove grouping.
+
+---
+
+# Statistics for each country
+
+- Here we will use **group_by()** to compute **total milk production** since 1990 **for each country** and **for each type of milk**.
+
+
+```r
+total&lt;-countries %&gt;%
+  group_by(Area,Item)%&gt;%     # Group by Country &amp; Milk type
+  summarise(
+    production = sum(Value)  # Sum annual production
+  )%&gt;%
+  ungroup()
+
+head(total,5)                # Show first 5 rows
+```
+
+```
+## # A tibble: 5 x 3
+##   Area        Item                    production
+##   &lt;chr&gt;       &lt;chr&gt;                        &lt;dbl&gt;
+## 1 Afghanistan Milk, whole fresh cow     41346067
+## 2 Afghanistan Milk, whole fresh goat     3055601
+## 3 Afghanistan Milk, whole fresh sheep    5843398
+## 4 Albania     Milk, whole fresh cow     24911316
+## 5 Albania     Milk, whole fresh goat     2207112
+```
+
+---
+
+# Top 3 producers
+
+- The [**slice()**](https://dplyr.tidyverse.org/reference/slice.html) function allows to extract specific rows from a data table. 
+
+-  It is accompanied by a number of helpers for common use cases
+  - **slice_sample()** for random selection
+  - **slice_min()** for selection of rows with lowest values...
+  
+- In order to extract **the top 3 producers of each type of milk**, we will use a combination of **group_by()** and **slice_max()**  
+
+---
+
+# Top 3 producers
+
+
+```r
+ranking&lt;-total%&gt;%
+  group_by(Item)%&gt;%   # To get top producers for each milk type
+  dplyr::slice_max(
+    production,       # Get max values for production
+    n=3               # Only keep top 3 producers
+  )%&gt;%
+  ungroup()
+
+ranking
+```
+
+```
+## # A tibble: 9 x 3
+##   Area                     Item                    production
+##   &lt;chr&gt;                    &lt;chr&gt;                        &lt;dbl&gt;
+## 1 United States of America Milk, whole fresh cow   2437081988
+## 2 India                    Milk, whole fresh cow   1389268000
+## 3 Russian Federation       Milk, whole fresh cow    936533056
+## 4 India                    Milk, whole fresh goat   119981705
+## 5 Bangladesh               Milk, whole fresh goat    54769040
+## 6 Sudan (former)           Milk, whole fresh goat    26470691
+## 7 China                    Milk, whole fresh sheep   31689509
+## 8 Turkey                   Milk, whole fresh sheep   28828040
+## 9 Greece                   Milk, whole fresh sheep   22886995
+```
+
+---
+
+
+# Main cow's milk producers?
+
+.center[&lt;span style='font-size:30px; color:#2a9d8f;'&gt;&lt;br&gt;**You may take some time to&lt;br&gt;explore the main cow's milk producers**&lt;/span&gt;&lt;br&gt;&lt;br&gt;&lt;span style='font-size:25px; color:#2a9d8f;'&gt;*Top 20 producers?*&lt;br&gt;*Percentage of world's milk produced by each country?*&lt;br&gt;*...*&lt;/span&gt;]
+
+---
+
+background-image: url(fig/back/cows.jpg)
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **2nd example** &lt;/span&gt;
+
+### Mapping **cow's milk** trade balances in Europe
+
+---
+
+# Import data
+
+- For this example, we will work with a data set summarizing **fresh milk trades** between countries since 1990, also extracted from [the FAO database](https://www.fao.org/statistics/en/)
+  - More precisely, we will work on a subset: **cow's whole milk trade for 2018** 
+
+- Data set is avaible at [this link](https://raw.githubusercontent.com/BjnNowak/CultivatedPlanet/main/data/FAO_MilkTrade_subset.csv) (copy/paste into **read_csv()** to import)
+
+
+
+```r
+trade &lt;-read_csv(
+  # Paste link inside read_csv()
+  'https://raw.githubusercontent.com/BjnNowak/CultivatedPlanet/main/data/FAO_MilkTrade_subset.csv'
+  )%&gt;%
+  # Subset: only cow whole milk trade for year 2018
+  filter(Item=='Milk, whole fresh cow')%&gt;%
+  filter(Year=='2018')
+```
+
+---
+
+# Filter imports and exports
+
+- The dataset includes milk exports and imports, expressed in quantity (*tons*) and value (*dollars*)
+  - We will focus on the **quantities** traded
+
+- We will create two tables: one for the imports, one for the exports 
+
+
+```r
+# One table with imports 
+imp&lt;-trade%&gt;%
+  filter(Element=='Import Quantity')%&gt;%
+  rename(Import=Value) 
+
+# One table with exports
+exp&lt;-trade%&gt;%
+  filter(Element=='Export Quantity')%&gt;%
+  rename(Export=Value)
+```
+
+---
+
+# Compute trade balance
+
+- We will now join the imports and exports table by country name to compute each country trade balance (*Exports-Imports*). 
+
+- Main possible [**table joins**](https://dplyr.tidyverse.org/reference/mutate-joins.html) are:
+
+.center[
+  &lt;img src="fig/R_2/joins.png" width=70%&gt;&lt;/img&gt;
+]
+
+---
+
+# Compute trade balance
+
+- Here, we will perform a **full_join()** between imports and exports tables, to get all trades (even for countries with only imports or exports)
+
+
+```r
+data &lt;- exp%&gt;%
+  full_join(
+    imp,         # Order does not matter for full_join()
+    by='Area'    # Merge by country names
+  )
+```
+
+- Doing so, empty values (ex: countries with no exports) have been replaced with NA. Before computing the trade balance, we may replace these values by 0.
+
+---
+
+# Compute trade balance
+
+- Replace NA by 0 with **mutate()** and **case_when()**:
+
+
+```r
+data &lt;- data %&gt;%
+  mutate(Export=case_when(
+    is.na(Export)~0,
+    TRUE~Export
+  ))%&gt;%
+  mutate(Import=case_when(
+    is.na(Import)~0,
+    TRUE~Import
+  ))
+```
+
+---
+
+# Compute trade balance
+
+- Compute trade balance and keep only few columns:
+
+
+```r
+data &lt;- data%&gt;%
+  mutate(
+    Balance = Export-Import
+  )%&gt;%
+  select(Area,Export,Import,Balance)%&gt;%
+  arrange(Balance) # Sort table by trade balance
+
+# Show most negative trade balance
+head(data,3)
+```
+
+```
+## # A tibble: 3 x 4
+##   Area     Export  Import  Balance
+##   &lt;chr&gt;     &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;
+## 1 Italy     46764 1113711 -1066947
+## 2 Germany 1611316 2353680  -742364
+## 3 Ireland   32221  757811  -725590
+```
+
+---
+
+# Mapping trade balance
+
+.pull-left[
+.center[
+  &lt;img src="fig/R_2/sf.jpg" width=100%&gt;&lt;/img&gt;
+]
+**Picture** [Alison Horst](https://github.com/allisonhorst)
+]
+
+.pull-right[
+- To map trade balances, we will use the [**{sf}**](https://github.com/r-spatial/sf/) extension 
+
+- *'sf'* means *'simple features'* 
+&gt; [Simple Features](https://en.wikipedia.org/wiki/Simple_Features) is a set of standards that specify a common storage and access model of geographic feature 
+
+]
+
+---
+
+# Load extensions
+
+- In addition to **{sf}**, we will use the [**{maps}**](https://cran.r-project.org/web/packages/maps/maps.pdf) extension, which provides some basic maps for R (such as world countries map, that we will use as a basemap to show the computed trade balances)  
+
+
+```r
+# Install extensions (to do only once)
+# install.packages("sf")
+# install.packages("maps")
+
+# Load extensions (to repeat at each session)
+library(sf)
+library(maps)
+```
+
+
+---
+
+
+# Load world basemap
+
+- Now, with these two extension, we are ready to **(i)** load world basemap and **(ii)** convert it to an {sf} object with [st_as_sf()](https://r-spatial.github.io/sf/reference/st_as_sf.html)
+
+
+```r
+world&lt;-maps::map(    # Load world map
+  database="world", 
+  plot = FALSE,      # Hide plot output
+  fill = TRUE
+  )%&gt;%
+  # Convert foreign object 
+  # to an sf object
+  sf::st_as_sf()
+```
+
+---
+
+# Plotting maps with {ggplot2}
+
+- **{sf}** object may be plotted with [{ggplot2}](https://ggplot2.tidyverse.org/) using [**geom_sf()**](https://ggplot2.tidyverse.org/reference/ggsf.html)
+
+- **Basic structure of a ggplot:**
+
+
+```r
+plot1 &lt;- ggplot(
+    # Specify data set
+    data = data_set,
+    # Specify x- and y- axis
+    aes(x=variable1, y=variable2)
+  )+ # Add new layer to plot with '+'
+  geom_point(
+    # May also use data/aes inside geom
+    aes(color=variable3)
+  )
+```
+
+---
+
+# World basemap
+
+- For our case study, we may start by plotting world basemap as follows:
+
+.pull-left[
+
+```r
+mp &lt;- ggplot(data=world)+
+  geom_sf(
+    fill='grey80',
+    color='white',
+    size=0.3
+  )
+
+mp
+```
+]
+
+.pull-right[
+![](2nd_session_R_files/figure-html/p1-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Europe basemap
+
+- If we want to focus on Europe, we can center our map on this continent
+
+.pull-left[
+
+```r
+# Bounding box for Europe
+lon=c(-14,33)
+lat=c(35,63)
+
+# Zoom on Europe
+mp&lt;-mp+
+  scale_x_continuous(
+    limits=lon
+  )+
+  scale_y_continuous(
+    limits=lat
+  )+
+  # Better theme for maps
+  theme_void()
+mp
+```
+]
+
+.pull-right[
+![](2nd_session_R_files/figure-html/p2-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+
+# Merge trade data
+
+- In order to add trade data to the map, we need to merge this table with world basemap (this time with **left_join()** to keep only rows with trade balance values)
+
+
+```r
+# New column named 'Area' (same name as in trade data) in world map
+world&lt;-world%&gt;%mutate(Area=ID)
+
+# Adding spatial information to trade balance table:
+data&lt;-data%&gt;%
+  # Name 'cleaning' (for European countries) before merging
+  mutate(Area=case_when(
+    # Name in trade table ~ Name in world map
+    Area=='Czechia'~'Czech Republic',
+    Area=='North Macedonia'~'Macedonia',
+    Area=='Republic of Moldova'~'Moldova',
+    Area=='Russian Federation'~'Russia',
+    Area=='United Kingdom of Great Britain and Northern Ireland'~'UK',
+    TRUE~Area
+  ))%&gt;%
+  left_join(world)
+```
+
+---
+
+# Trade balance in Europe
+
+- We can now add trade balance to our map
+
+.pull-left[
+
+```r
+mp&lt;-mp+
+  geom_sf(
+    data=data,
+    aes(
+      fill=Balance,
+      # Spatial info stored in 'geom' column
+      geometry=geom
+    ),
+    color='white',size=0.3)
+mp
+```
+]
+
+.pull-right[
+![](2nd_session_R_files/figure-html/p3-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Map customization
+
+- As for 'classic' ggplot objects, we may adjust [color gradient](https://ggplot2.tidyverse.org/reference/scale_gradient.html) (here with **scale_fill_gradient2()** to create a divergent palette)
+
+.pull-left[
+
+```r
+mp&lt;-mp+
+  scale_fill_gradient2(
+    low = "#de425b",
+    mid = "#fff18f",
+    high = "#488f31",
+    midpoint = 0,
+    breaks = c(-1000000,-500000,0,500000),
+    labels = glue::glue("{c(-1,-0.5,0,0.5)}")
+  )
+
+mp
+```
+]
+
+.pull-right[
+![](2nd_session_R_files/figure-html/p4-out-1.png)&lt;!-- --&gt;
+]
+
+.footnote[
+**Note:** Useful [link](https://learnui.design/tools/data-color-picker.html#divergent) for divergent color palette by **learnui.design**
+]
+
+---
+
+# Map customization
+
+- We may also customize labels
+
+.pull-left[
+
+```r
+mp&lt;-mp+
+  labs(
+    title="Cow's milk trade",
+    fill="Balance\n(million tons)",
+    caption="Data: FAO (Year 2018)"
+  )
+
+mp
+```
+]
+
+.pull-right[
+![](2nd_session_R_files/figure-html/p5-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Create custom theme
+
+- As we did in our [first session](https://bjnnowak.github.io/Lessons/introduction_R#1), we may create a custom theme for more customization
+
+
+```r
+# Save custom theme
+custom_theme&lt;-theme(
+  plot.title=element_text(size=25,color='grey20',face='bold'),
+  legend.title=element_text(size=20,color='grey20'),
+  legend.text=element_text(size=15,color='grey40'),
+  plot.caption=element_text(size=15,color='grey40')
+)
+
+# Apply custom theme to plot
+mp&lt;-mp+
+  custom_theme
+```
+
+---
+
+# Main conclusions
+
+- What do we learn with this map?
+
+.pull-left[
+
+
+
+- Most negative balance for Italy, most positive balance for Austria
+
+- Although Ireland and Germany are important producers, they import more milk than they export
+
+- Overall, trades are relatively low compared to countries production (&gt;5%)
+
+]
+
+.pull-right[
+![](2nd_session_R_files/figure-html/p6-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+background-image: url(fig/back/cow2.jpg)
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Going further** &lt;/span&gt;
+
+### Example of plots made with {ggplot2}
+
+---
+
+# Going further...
+
+- Following a similar workflow, we may add milk production for each country to the same map and [more text customization](https://bjnnowak.netlify.app/2021/09/05/r-changing-plot-fonts/) 
+
+.center[
+  &lt;img src="fig/R_2/MilkTrade.png" width=60%&gt;&lt;/img&gt;
+]
+
+---
+
+# Going further...
+
+- Mix [chloropleth and time series](https://bjnnowak.netlify.app/2021/09/28/r-hybrid-map-chlorpleth-x-time-series/) with [{geofacet}](https://cran.r-project.org/web/packages/geofacet/vignettes/geofacet.html)
+
+.center[
+  &lt;img src="fig/R_2/milk.png" width=100%&gt;&lt;/img&gt;
+]
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
