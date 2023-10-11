@@ -8,7 +8,7 @@ S <- 0.05
 d <- 90000/10000
 
 # Model function
-model_fun <- function(
+fun_model <- function(
     name,           # Scenario name 
     data,           # Climatic variables to be used as inputs
     GDD_1leaf,      # Thermal requirement for the emergence of one leaf
