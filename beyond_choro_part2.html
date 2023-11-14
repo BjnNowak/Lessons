@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Beyond choropleth</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Benjamin Nowak" />
+    <script src="libs/header-attrs-2.21/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/bn.css" type="text/css" />
+    <link rel="stylesheet" href="css/bn-fonts.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Beyond choropleth
+]
+.subtitle[
+## Part 2: How to make bivariate maps
+]
+.author[
+### Benjamin Nowak
+]
+.date[
+### December 2023
+]
+
+---
+
+
+background-color: #e76f51
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Introduction** &lt;/span&gt;
+
+### What are multivariate choropleths?
+
+---
+
+# The first choropleth map
+
+-  A **choropleth map**  is a type of statistical thematic map in which a quantitative variable is represented as a function of a color gradient
+
+.pull-left[
+- First choropleth map: [Popular education in France](https://gallica.bnf.fr/ark:/12148/btv1b530830640) (Dupin, 1826)
+
+  - ***Legend:*** *From 1 pupil per 10 inhabitants to 1 pupil per 268 inhabitants from lightest to darkest*
+]
+
+.pull-right[
+&lt;img src="fig/gis/chloro.png" width=100%&gt;&lt;/img&gt;
+]
+
+
+---
+
+# Univariate choropleth map
+
+-  A **choropleth map**  is a type of statistical thematic map in which a quantitative variable is represented as a function of a color gradient
+
+.pull-left[
+- Choropleth maps are now among the most widely used maps (especially on election nights)...
+
+]
+
+.pull-right[
+&lt;img src="fig/choro/elec_macron.PNG" width=100%&gt;&lt;/img&gt;
+**Source** Le Monde
+]
+
+
+---
+
+# Univariate choropleth map
+
+-  A **choropleth map**  is a type of statistical thematic map in which a quantitative variable is represented as a function of a color gradient
+
+.pull-left[
+- Choropleth maps are now among the most widely used maps
+- Most of the time, only **one variable is shown on a (univariate) choropleth**
+
+]
+
+.pull-right[
+&lt;img src="fig/choro/elec_macron.PNG" width=100%&gt;&lt;/img&gt;
+**Source** Le Monde
+]
+
+---
+
+# Bivariate choropleth map
+
+-  A **bivariate choropleth map**  is a type of statistical thematic map in which **two quantitative variables are represented**, blending two color gradients
+
+&lt;img src="fig/choro/choro_def.png" width=100%&gt;&lt;/img&gt;
+
+---
+
+# Bivariate choropleth map
+
+-  A **bivariate choropleth map**  is a type of statistical thematic map in which **two quantitative variables are represented**, blending two color gradients
+
+.pull-left[
+- Joshua Stevens wrote a [very good blog post](https://www.joshuastevens.net/cartography/make-a-bivariate-choropleth-map/) about bivariate choropleths, showing how to create them with QGIS
+]
+
+.pull-right[
+&lt;img src="fig/choro/bf_bivariate.png" width=70%&gt;&lt;/img&gt;
+]
+
+
+---
+
+# Bivariate choropleth map
+
+-  A **bivariate choropleth map**  is a type of statistical thematic map in which **two quantitative variables are represented**, blending two color gradients
+
+&lt;center&gt; Today: How to make a bivariate choropleth with R? &lt;/center&gt;
+
+---
+
+background-image: url(fig/back/hill.jpg)
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Multivariate maps** &lt;/span&gt;
+
+### Loading the data
+
+---
+
+# Case study
+
+
+We will learn how to reproduce this **bivariate choropleth**
+&lt;center&gt;
+&lt;img src="fig/gis/map/herds.png" width=75%&gt;&lt;/img&gt;
+&lt;/center&gt;
+---
+
+# Loading the data
+
+
+The data we're going to use here is available in the [{frex}](https://github.com/BjnNowak/frex) package I've created
+&gt; *The goal of this package is to provide several layers of information for metropolitan France, particularly useful for analyzing agricultural systems. The basis of this package is a gridded map of France in hexagons of about 450 km2. For each hexagon, different information can be added using the package function, such as the surface area occupied by different types of crop, the nature of the soil or climatic data.*
+
+---
+
+# Loading the data
+
+- For the sake of simplicity, we won't install the whole package, but only load the data we need, **starting with the basemap** of "gridded" France
+
+.pull-left[
+
+```r
+# Load packages
+library(tidyverse)
+library(sf)
+
+# Load basemap
+hex&lt;-read_sf('https://github.com/BjnNowak/frex_db/raw/main/map/hex_grid.gpkg')
+
+# Make plot
+ggplot(hex)+
+  geom_sf()
+```
+]
+
+.pull-right[
+![](beyond_choro_part2_files/figure-html/p1-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Loading the data
+
+- We will now load the data tables to fill the basemap (one table with the human population density, an other with the farm animal population density) 
+
+
+```r
+# Load data
+# Human population (per km2)
+human_pop&lt;-read_csv('https://raw.githubusercontent.com/BjnNowak/frex_db/main/data/human/human_pop_density.csv')
+# Farm animal density (per km2)
+herd&lt;-read_csv('https://raw.githubusercontent.com/BjnNowak/frex_db/main/data/herds/herds_density_municipality.csv')
+```
+
+---
+
+# Loading the data
+
+- If you look at the *hex* object, you will see that each hexagon has a unique identifiant (*hex_id* column), that is also present in the data files: hence we can join the data tables to the basemap
+
+.pull-left[
+
+```r
+data&lt;-hex%&gt;%
+  left_join(human_pop)%&gt;%
+  left_join(herd)
+
+ggplot(data, aes(fill=milk_cow_km2))+
+  geom_sf()
+```
+]
+
+.pull-right[
+![](beyond_choro_part2_files/figure-html/p2-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Practice
+
+&lt;p style='color:red; text-align:center;'&gt;
+Following what we learn in the first part, take some time to customize this simple, univariate choropleth !
+&lt;/p&gt;
+
+---
+
+background-color: #e76f51
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Make bivariate choropleth** &lt;/span&gt;
+
+### Create a bivariate choropleth map
+
+---
+
+# Prepare the data
+
+- We will now see how we can reproduce the bivariate choropleth map **comparing human and cow density**
+
+- First, fe will create a single column for cow density (combining milk and meat cows) 
+
+
+```r
+data&lt;-data%&gt;%
+  mutate(cow_km2=milk_cow_km2+meat_cow_km2)
+```
+
+
+---
+
+# Fix thresholds
+
+- One very important thing for the final rendering of the bivariate choropleth is to set the appropriate thresholds for the two variables 
+
+&lt;center&gt;&lt;img src="fig/choro/bivar_scale.png" width=50%&gt;&lt;/img&gt;&lt;/center&gt;
+
+- In our case, it seems appropriate to set **the same thresholds for both variables** (but it's not always like that)
+
+---
+
+# Fix thresholds
+
+- To obtain a roughly balanced number of hexagons with each color in the palette, the most conventional way is to set the thresholds **using tiertiles** 
+
+
+```r
+quantile(data$human_km2, na.rm=TRUE, probs=c(0.33,0.66))
+```
+
+```
+##      33%      66% 
+## 31.81796 80.92791
+```
+
+```r
+quantile(data$cow_km2, na.rm=TRUE, probs=c(0.33,0.66))
+```
+
+```
+##       33%       66% 
+##  4.374322 20.839668
+```
+
+- Here, by taking into account both human and cow tiertiles, **thresholds can be set at c(25,50)**
+
+---
+
+# Set classes
+
+- We will now assign classes to the hexagons according to these thresholds
+
+&lt;center&gt;&lt;img src="fig/choro/bivar_scale_class.png" width=50%&gt;&lt;/img&gt;&lt;/center&gt;
+
+- To do so, we will consider that the human population density is the variable A (variable B for cows)
+
+---
+
+# Set classes
+
+- We will start with the human population density (variable A)
+
+
+```r
+# Set thresholds
+t1&lt;-25
+t2&lt;-50
+
+# Set classes for human pop
+data&lt;-data%&gt;% 
+  replace(is.na(.), 0)%&gt;%
+  mutate(cl_A=case_when(
+    human_km2&lt;t1~'A1',
+    human_km2&lt;t2~'A2',
+    TRUE~'A3'
+  )
+)
+```
+
+---
+
+# Set classes
+
+- Now the same for cow density (variable B)
+
+
+```r
+# Set classes for cow density
+data&lt;-data%&gt;% 
+  mutate(cl_B=case_when(
+    cow_km2&lt;t1~'B1',
+    cow_km2&lt;t2~'B2',
+    TRUE~'B3'
+  ))
+```
+
+--
+
+&lt;p style='color:red; text-align:center;'&gt;
+How are we gonna merge both classes?
+&lt;/p&gt;
+
+---
+
+# Set classes
+
+- Simple answer!
+
+
+```r
+data&lt;-data%&gt;%
+  mutate(cl=paste0(cl_A,cl_B))
+```
+
+---
+
+# Set classes
+
+- **Note:** the preceding workflow may be but in a function for easier reuse (eventually renaming the columns to "VarA" and "VarB" and defining them as arguments, with the thresholds)
+
+
+```r
+t1&lt;-25
+t2&lt;-50
+
+data&lt;-data%&gt;% 
+  replace(is.na(.), 0)%&gt;%
+  mutate(cl_A=case_when(
+    human_km2&lt;t1~'A1',
+    human_km2&lt;t2~'A2',
+    TRUE~'A3'
+  ))%&gt;%
+  mutate(cl_B=case_when(
+    cow_km2&lt;t1~'B1',
+    cow_km2&lt;t2~'B2',
+    TRUE~'B3'
+  ))%&gt;%
+  mutate(cl=paste0(cl_A,cl_B))
+```
+
+---
+
+# Make choropleth
+
+- We are now ready to fill the hex based on the newly created column
+
+.pull-left[
+
+```r
+p1&lt;-ggplot(data, aes(fill=cl))+
+  geom_sf()
+p1
+```
+]
+
+.pull-right[
+![](beyond_choro_part2_files/figure-html/p3-out-1.png)&lt;!-- --&gt;
+]
+
+--
+
+... but we need a better color palette !
+
+---
+
+# Set color palette
+
+- Bivariate color palettes require two colors that blend well together. So there are a relatively limited number of 'classic' bivariate color palettes. Some are available in the [{pals}](https://cran.r-project.org/web/packages/pals/vignettes/pals_examples.html) package:
+
+
+```r
+#install.packages('pals')
+library(pals)
+```
+
+&lt;center&gt;&lt;img src="fig/choro/pals.JPG" width=60%&gt;&lt;/img&gt;&lt;/center&gt;
+**Source** [Jakub Nowosad](https://jakubnowosad.com/posts/2020-08-25-cbc-bp2/)
+
+---
+
+# Set color palette
+
+- Let's create a bivariate color palette for our case study, based on one palette from {pals}:
+
+
+```r
+pal&lt;-stevens.pinkblue(9)
+
+pal_bivar&lt;-c(
+  'A1B1'=pal[1],
+  'A1B2'=pal[2],
+  'A1B3'=pal[3],
+  'A2B1'=pal[4],
+  'A2B2'=pal[5],
+  'A2B3'=pal[6],
+  'A3B1'=pal[7],
+  'A3B2'=pal[8],
+  'A3B3'=pal[9]
+)
+```
+
+---
+
+# Set color palette
+
+- Apply this palette to the map. Looks better, right?
+
+
+.pull-left[
+
+```r
+p2&lt;-p1+
+  scale_fill_manual(values=pal_bivar)+
+  # Hide legend
+  guides(fill='none')+
+  theme_void()
+
+
+p2
+```
+]
+
+.pull-right[
+![](beyond_choro_part2_files/figure-html/p4-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Set color palette
+
+&lt;p style='color:red;'&gt;
+Now try to change the color palette of this map, using another color palette of the {pals} package
+&lt;/p&gt;
+
+--
+
+- Note that you may also create custom color palette from [this Observable app](https://observablehq.com/@benjaminadk/bivariate-choropleth-color-generator) from BVG software, or use an online color picker to extract hex codes for another online palette 
+
+---
+
+background-color: #e76f51
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Create legend** &lt;/span&gt;
+
+### Create legend for bivariate choropleth map
+
+---
+
+
+# Create legend
+
+- We will start by creating a tibble with various combinations of classes for both variables (human population and animal density): 
+
+
+```r
+tib&lt;-tibble(
+  var_A = rep(c("A1","A2","A3"),3),
+  var_B = c(rep("B1",3),rep("B2",3),rep("B3",3)),
+  value = paste0(var_A,var_B)
+)
+```
+
+---
+
+# Create legend
+
+- This tibble may be plotted on a grid as follows:
+
+.pull-left[
+
+```r
+leg_tile&lt;-ggplot(data=tib,aes(x=var_A,y=var_B,fill=value))+
+  geom_tile()+
+  scale_fill_manual(values=pal)+
+  guides(fill='none')+
+  coord_fixed()+
+  labs(x="Human density",y="Animal density")+
+  theme_minimal()+
+  theme(axis.text=element_blank())
+
+leg_tile
+```
+]
+
+.pull-right[
+![](beyond_choro_part2_files/figure-html/p5-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Create legend
+
+- A slightly different version with points:
+
+.pull-left[
+
+```r
+leg_pts&lt;-ggplot(data=tib,aes(x=var_A,y=var_B,fill=value))+
+  geom_point(pch=21,size=60,color="grey90")+
+  scale_fill_manual(values=pal)+
+  guides(fill='none')+
+  coord_fixed()+
+  labs(x="Human density",y="Animal density")+
+  theme_minimal()+
+  theme(axis.text=element_blank())
+
+leg_pts
+```
+]
+
+.pull-right[
+![](beyond_choro_part2_files/figure-html/p6-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+background-color: #e76f51
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Create legend** &lt;/span&gt;
+
+### Combine map and legend
+
+---
+# Combine map and legend
+
+- We may combine several ggplot() with [{patchwork}](https://patchwork.data-imaginist.com/index.html) or [{cowplot}](https://cran.r-project.org/web/packages/cowplot/vignettes/introduction.html). An example with {patchwork}: 
+
+.pull-left[
+
+```r
+library(patchwork)
+
+leg_tile+p2
+```
+]
+
+.pull-right[
+![](beyond_choro_part2_files/figure-html/p7-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Combine map and legend
+
+- Slightly different version with different sizes for plots: 
+
+.pull-left[
+
+```r
+layout &lt;- c(
+  area(t = 8, l = 1, b = 10, r = 2),
+  area(t = 1, l = 1, b = 10, r = 10)
+)
+
+leg_tile+p2+ 
+  plot_layout(design = layout)
+```
+]
+
+.pull-right[
+![](beyond_choro_part2_files/figure-html/p8-out-1.png)&lt;!-- --&gt;
+]
+---
+
+# Combine map and legend
+
+- Finally, as bivariate choropleth may be hard to read, it's a good practice to add some annotations (in R or after export) 
+
+&lt;center&gt;&lt;img src="fig/choro/bivar_scale.png" width=50%&gt;&lt;/img&gt;&lt;/center&gt;
+
+---
+
+background-color: #e76f51
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Multivariate choropleth** &lt;/span&gt;
+
+### To go further...
+
+---
+
+# To go further...
+
+- There is an R package, [{biscale}](https://cran.r-project.org/web/packages/biscale/vignettes/biscale.html) that may help you create bivariate choropleth 
+
+- Beyond bivariate choropleth: **trivariate choropleth**! An example [here](https://bjnnowak.github.io/gis/map_gallery_trivariate.html), with code for this map [here](https://github.com/BjnNowak/TidyTuesday/blob/main/SC_texture.R)
+
+---
+
+# To go further...
+
+&lt;p style='color:red; text-align:center;'&gt;
+Practice: Using the same workflow, or the {biscale} package, create another bivariate choropleth map (comparing for example human and sheep density, sheep and goats density...) 
+&lt;/p&gt;
+
+---
+
+background-color: #e76f51
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Other bivariate maps** &lt;/span&gt;
+
+### Mixing points and choropleths
+
+---
+
+# Other bivariate maps
+
+- Another way of creating a bivariate map is to mix a color gradient (*ie* choropleth) with proportional symbols on centroids, as in the example below:
+
+&lt;center&gt;&lt;img src="fig/gis/map/organic_mini.png" width=100%&gt;&lt;/img&gt;&lt;/center&gt;
+
+[Full image with high resolution](https://bjnnowak.github.io/gis/map_gallery_organic.html)
+
+---
+
+# Load data
+
+- To reproduce this map, we will need the following data **to compare the total area under wheat and the organic wheat area**
+
+
+```r
+# Load data
+# Total crop area
+total_area&lt;-read_csv('https://raw.githubusercontent.com/BjnNowak/frex_db/main/data/crop/crop_distribution.csv')
+# Organic crop area
+organic_area&lt;-read_csv('https://raw.githubusercontent.com/BjnNowak/frex_db/main/data/crop/organic_crop_distribution.csv')
+```
+
+---
+
+# Total soft wheat area
+
+- The data about total soft wheat area is in the *soft_wheat_area_km2* column
+
+--
+
+&lt;p style='color:red; text-align:center;'&gt;
+Practice: Following what we saw in the first part of this tutorial, create a choropleth for total soft wheat area
+&lt;/p&gt;
+
+---
+
+# Make choropleth
+
+- Choropleth for total wheat area: 
+
+.pull-left[
+
+```r
+# Merge basemap and data
+total&lt;-hex%&gt;%
+  left_join(total_area)
+
+library(scico) # For color palette
+
+map_1 &lt;- ggplot(total,aes(fill=soft_wheat_area_km2))+
+  geom_sf()+
+  scale_fill_scico(
+    palette="batlow",
+    na.value = "grey75",
+    direction=1,begin=0,end=0.75
+  )+
+  labs(fill="Total wheat")+
+  theme_void()
+
+map_1
+```
+]
+
+.pull-right[
+![](beyond_choro_part2_files/figure-html/p9-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Point on centroids
+
+- We will now prepare the data to plot on the centroid of each hexagon of the map a symbol with size proportional to the soft wheat area under organic farming 
+
+
+```r
+# Merge map and data
+organic&lt;-hex%&gt;%
+  left_join(organic_area)%&gt;%
+  # Get centroid
+  st_centroid()
+```
+
+---
+
+# Point on centroids
+
+- Centroids may be plotted this way:
+
+.pull-left[
+
+```r
+ggplot(organic,aes(size=organic_soft_wheat_area_km2))+
+  geom_sf(pch=21,fill=NA,color=alpha("black",0.5))+
+  scale_size(range=c(1,7))+
+  theme_void()
+```
+]
+
+.pull-right[
+![](beyond_choro_part2_files/figure-html/p10-out-1.png)&lt;!-- --&gt;
+]
+
+--
+
+&lt;p style='color:red; text-align:center;'&gt;
+Practice: Add centroids for organic wheat on map_1
+&lt;/p&gt;
+
+---
+
+# Point on centroids
+
+- Adding centroids to first map:
+
+.pull-left[
+
+```r
+map_2&lt;-map_1+
+  geom_sf(
+    organic,
+    mapping=aes(size=organic_soft_wheat_area_km2, geometry=geom),
+    pch=21,fill=NA,color=alpha("grey80",0.5)
+  )+
+  scale_size(range=c(1,7))+
+  labs(size="Organic wheat")+
+  theme_void()
+
+map_2
+```
+]
+
+.pull-right[
+![](beyond_choro_part2_files/figure-html/p11-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# To go further...
+
+&lt;p style='color:red; text-align:center;'&gt;
+Practice: Apply the same method to map the distribution of another crop (vineyard, sunflower...)
+&lt;/p&gt;
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
