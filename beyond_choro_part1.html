@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Beyond choropleth</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Benjamin Nowak" />
+    <script src="libs/header-attrs-2.21/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/bn.css" type="text/css" />
+    <link rel="stylesheet" href="css/bn-fonts.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Beyond choropleth
+]
+.subtitle[
+## Part 1
+]
+.author[
+### Benjamin Nowak
+]
+.date[
+### December 2023
+]
+
+---
+
+
+background-image: url(fig/back/hill.jpg)
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Before we start** &lt;/span&gt;
+
+### A time for presentation...
+
+---
+
+# About me
+
+
+.pull-left[
+**Lecturer in agronomy** at [VetAgro Sup](https://www.vetagro-sup.fr/about-vetagro-sup/), a French institution of higher education and research that trains veterinarians, agricultural engineers, and veterinary public health inspectors
+]
+
+.pull-right[
+&lt;img src="fig/choro/bnowak.jpg" style="border-radius: 50%; width: 50%"&gt;&lt;/img&gt;
+]
+&lt;br&gt;&lt;br&gt;
+- My **research activities** focus on remote sensing for crop monitoring, soil sciences and biogeochemical cycles (mainly carbon, nitrogen and phosphorus)
+
+- My **teaching activities** includes data analysis with R and spatial analysis with QGIS and R 
+
+---
+
+# About me
+
+I make map... **for my research activities**
+
+
+.pull-left[
+&lt;img src="https://github.com/BjnNowak/gis/raw/main/fig/gis/NDVI.gif" style="width=100%;"/&gt;&lt;/img&gt;
+]
+
+.pull-right[
+Remote sensing for crop monitoring, using multispectral images 
+]
+
+---
+
+# About me
+
+I make map... **for my teaching activities**
+
+
+.pull-left[
+&lt;img src="fig/gis/map_creation.gif" style="width=100%;"/&gt;&lt;/img&gt;
+]
+
+.pull-right[
+Spatial analysis and map making with [QGIS](https://bjnnowak.github.io/gis) and R
+]
+
+---
+
+# About me
+
+I make map... **for science books**
+
+
+.pull-left[
+&lt;img src="fig/choro/9782100861781_MemoVisuelDAgronomie_CouvDef1.jpg" style="width=100%;"/&gt;&lt;/img&gt;
+]
+
+.pull-right[
+A book to be published in February 2014
+]
+
+---
+
+# About you?
+
+&lt;p style="color:#ff0000;"&gt;
+&lt;b&gt;Who are you?
+&lt;br&gt;&lt;br&gt;
+What are you doing right now?
+&lt;br&gt;&lt;br&gt;
+What are you expectations for this training session?&lt;/b&gt;
+&lt;/p&gt;
+
+---
+
+background-image: url(fig/back/hill.jpg)
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Introduction** &lt;/span&gt;
+
+### A bit of history
+
+---
+
+# The first choropleth map
+
+-  A **choropleth map**  is a type of statistical thematic map in which a quantitative variable is represented as a function of a color gradient
+
+.pull-left[
+- First choropleth map: [Popular education in France](https://gallica.bnf.fr/ark:/12148/btv1b530830640) (Dupin, 1826)
+
+  - ***Legend:*** *From 1 pupil per 10 inhabitants to 1 pupil per 268 inhabitants from lightest to darkest*
+]
+
+.pull-right[
+&lt;img src="fig/gis/chloro.png" width=100%&gt;&lt;/img&gt;
+]
+
+
+---
+
+# The first choropleth map
+
+-  A **choropleth map**  is a type of statistical thematic map in which a quantitative variable is represented as a function of a color gradient
+
+.pull-left[
+- Choropleth maps are now among the most widely used maps (especially on election nights)...
+
+]
+
+.pull-right[
+&lt;img src="fig/choro/elec_macron.png" width=100%&gt;&lt;/img&gt;
+**Source** Le Monde
+]
+
+
+---
+
+# The first choropleth map
+
+-  A **choropleth map**  is a type of statistical thematic map in which a quantitative variable is represented as a function of a color gradient
+
+.pull-left[
+- Choropleth maps are now among the most widely used maps (especially on election nights)...
+- ...for better or worse!
+]
+
+.pull-right[
+&lt;img src="fig/choro/age_at_birth.jpg" width=100%&gt;&lt;/img&gt;
+**Source** Map of the Week
+]
+
+
+---
+
+# The first choropleth map
+
+-  A **choropleth map**  is a type of statistical thematic map in which a quantitative variable is represented as a function of a color gradient
+
+.pull-left[
+- Choropleth maps are now among the most widely used maps (especially on election nights)...
+- ...for better or worse!
+]
+
+.pull-right[
+- First thing first: before exploring other options, **how to make a good choropleth with R?**
+]
+
+
+---
+
+background-image: url(fig/back/hill.jpg)
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Getting started** &lt;/span&gt;
+
+### Installation of **R** and **RStudio**
+
+---
+
+# Getting started
+
+
+1. [Download R](https://cran.r-project.org/) on CRAN
+&gt; *"The “Comprehensive R Archive Network” (CRAN) is a collection of sites which carry identical material, consisting of the R distribution(s), the contributed extensions, documentation for R, and binaries."*
+
+2. [Download R Studio](https://www.rstudio.com/products/rstudio/download/#download)
+&gt; *"RStudio is an integrated development environment (IDE) for R. It includes a console, syntax-highlighting editor that supports direct code execution, as well as tools for plotting, history, debugging and workspace management."*
+
+  - Choose 'Free RStudio Desktop' to run RStudio on your local machine
+
+---
+
+
+
+# Getting started
+
+- Once RStudio is installed, we are ready to create a new **Project**
+
+  - *File &gt; New Project &gt; New Directory*
+.center[
+  &lt;img src="fig/R/projects_new.png" width=50%&gt;&lt;/img&gt;
+]
+
+- Doing so, the **current working directory** is set to the **project directory** (where we can for example store the data sets related to this project in a **'Data'** folder)
+
+---
+
+# Getting started
+
+.center[
+  &lt;img src="fig/R/Rproj.png" width=50%&gt;&lt;/img&gt;
+]
+
+.footnote[
+**Source:** [Musings on R (Martin Chan)](https://martinctc.github.io/blog/rstudio-projects-and-working-directories-a-beginner's-guide/)
+]
+
+---
+
+# Getting started
+
+- We can create **a new script** inside this project
+
+  - *File &gt; New File &gt; R Script*
+  
+- Although RStudio keeps track of the changes made to the script, we will save it before we start 
+
+  - *File &gt; Save as*
+  
+  - You may save it in a **'Script'** folder, as suggested in the previous slide
+
+&lt;br&gt;
+
+--
+
+.center[&lt;span style='font-size:30px; color:#2a9d8f;'&gt;**We are now ready to process data!**&lt;/span&gt;]
+
+---
+
+background-image: url(fig/back/sheep.jpg)
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **First example** &lt;/span&gt;
+
+### Gross Domestic Product per capita
+
+---
+
+# Load packages
+
+- **The [{tidyverse}](https://www.tidyverse.org/):** Collection of R packages for data science. All packages share an underlying design philosophy, grammar, and data structures.
+
+![](fig/R/tidyverse.png)
+
+.footnote[
+**Source** [Barnier, 2021](https://juba.github.io/tidyverse/index.html)
+]
+
+---
+
+# Load packages
+
+- **The [{tidyverse}](https://www.tidyverse.org/):** Collection of R packages for data science. All packages share an underlying design philosophy, grammar, and data structures.
+
+- First lines of code will be to install and load these extensions in our R session
+
+
+```r
+# Install tidyverse (to do only once)
+# install.packages("tidyverse")
+
+# Load tidyverse (to repeat at each session)
+library(tidyverse)            
+```
+         
+---
+
+# Load packages
+
+.pull-left[
+.center[
+  &lt;img src="fig/R_2/sf.jpg" width=100%&gt;&lt;/img&gt;
+]
+**Picture** [Alison Horst](https://github.com/allisonhorst)
+]
+
+.pull-right[
+- In GIS, we work with two types of format: **vectors** and **rasters**
+
+- To work with vectors files, we will use the [**{sf}**](https://github.com/r-spatial/sf/) extension 
+
+- *'sf'* means *'simple features'* 
+&gt; [Simple Features](https://en.wikipedia.org/wiki/Simple_Features) is a set of standards that specify a common storage and access model of geographic feature 
+
+]
+
+---
+
+# Load packages
+
+- In addition to **{sf}**, we will use the [**{rnaturalearth}**](https://github.com/ropensci/rnaturalearth) extension, which provides some basic maps for R (such as world countries map)
+
+
+```r
+# Install extensions (to do only once)
+# install.packages("sf")
+# install.packages("rnaturalearth")
+
+# Load extensions (to repeat at each session)
+library(sf)
+library(rnaturalearth)
+```
+
+---
+
+# World basemap
+
+To load and plot world basemap: 
+
+.pull-left[
+
+```r
+# Load basemap
+world_110 &lt;- ne_countries(
+  type = "countries",
+  # Choose scale
+  scale = 110,
+  # Return {sf} object
+  returnclass = "sf"      
+)
+
+# Make plot
+wrld&lt;-ggplot(world_110)+
+  geom_sf(fill="dimgrey",color="white")
+
+wrld
+```
+]
+
+.pull-right[
+![](beyond_choro_part1_files/figure-html/p1-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# World basemap
+
+There is three different scales for {rnaturalearth} files: 
+
+.center[
+  &lt;img src="fig/choro/resolution_natural_earth.jpg" width=100%&gt;&lt;/img&gt;
+]
+**Picture** [Natural Earth](https://www.naturalearthdata.com/downloads/)
+
+---
+
+# World basemap
+
+A comparisons of different scales for one country: 
+
+.pull-left[
+
+```r
+aus_110 &lt;- ne_countries(
+  country = "australia",
+  scale = 110, returnclass = "sf"      
+)
+
+aus_10 &lt;- ne_countries(
+  country = "australia",
+  scale = 10, returnclass = "sf"      
+)
+
+
+a110&lt;-ggplot(aus_110)+geom_sf()+labs(title="Scale 110")
+a10&lt;-ggplot(aus_10)+geom_sf()+labs(title="Scale 10")
+
+library(patchwork)
+a110/a10
+```
+]
+
+.pull-right[
+![](beyond_choro_part1_files/figure-html/p2-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# First choropleth
+
+- The total GDP per country is stored in the *gdp_md_est* column. It is easy to create one choropleth from this column: 
+
+.pull-left[
+
+```r
+# Make choropleth
+wrld&lt;-ggplot(
+    world_110,
+    # Specify column in aes()
+    aes(fill=gdp_md_est)
+  )+
+  geom_sf(color="white")+
+  labs(
+    title="First choropleth",
+    fill="Total GDP"
+  )
+
+wrld
+```
+]
+
+.pull-right[
+![](beyond_choro_part1_files/figure-html/p3-out-1.png)&lt;!-- --&gt;
+]
+
+- ... but we have several things to change for a good result !
+
+---
+
+# Compute GDP per capita
+
+- When mapping, it is better to **compare variables corrected for area or population** (here the GDP per capita)
+
+- With {sf}, it is easy to make those calculation, following the syntax from the tidyverse
+
+.center[
+  &lt;img src="fig/R/tidydata_1.jpg" width=70%&gt;&lt;/img&gt;
+]
+
+.footnote[ 
+  **Picture** [Alison Horst](https://github.com/allisonhorst) 
+]
+
+---
+
+# Compute GDP per capita
+
+- The GDP per capita may be computed as follows:
+
+
+```r
+clean&lt;-world_110%&gt;%
+  # Compute GDP per capita
+  mutate(gdp_per_capita=gdp_md_est/as.numeric(pop_est)*1000000)%&gt;%
+  # Remove value for Antarctica
+  mutate(gdp_per_capita=case_when(
+    name!='Antarctica'~gdp_per_capita,
+    TRUE~NA_real_
+  ))
+
+summary(clean$gdp_per_capita)
+```
+
+```
+##     Min.  1st Qu.   Median     Mean  3rd Qu.     Max.     NA's 
+##    569.9   3862.5  11545.0  20254.2  27425.2 144535.7        1
+```
+
+---
+
+# Choropleth of GDP per capita
+
+- We may now create the choropleth of GDP per capita using the new *gdp_per_capita* column: 
+
+.pull-left[
+
+```r
+p1&lt;-ggplot(clean)+
+  geom_sf(
+    aes(fill=gdp_per_capita),
+    color="white"
+  )+
+  labs(fill="GDP per capita")
+
+p1
+```
+]
+
+.pull-right[
+![](beyond_choro_part1_files/figure-html/p4-out-1.png)&lt;!-- --&gt;
+]
+
+--
+- &lt;p style="color:red;"&gt;&lt;b&gt;What do you want to change for a better layout?&lt;/b&gt;&lt;/p&gt;
+
+---
+
+# The color scale
+
+- **Color palette choice** is very important for choropleths
+
+.center[
+  &lt;img src="fig/choro/diverging.jpg" width=80%&gt;&lt;/img&gt;&lt;br&gt;
+  **Source** [Datawrapper](https://blog.datawrapper.de/diverging-vs-sequential-color-scales/)
+]
+
+.pull-left[
+- **Sequential color scale** are more intuitive but small differences are hard to spot
+]
+
+.pull-right[
+- **Diverging color scale** are pertinent when there is a meaningful middle value (eg 0 for trade balance)
+]
+
+---
+
+# The color scale
+
+- There are several online tools to help you choose and create color palettes, such as [coolors.co](https://coolors.co/) or [ColorBrewer](https://colorbrewer2.org/#type=sequential&amp;scheme=BuGn&amp;n=3)
+
+- Also, there are R packages with predefined color palettes, such as [scico](https://github.com/thomasp85/scico), [wesanderson](https://github.com/karthik/wesanderson), [PNWcolors](https://github.com/jakelawlor/PNWColors/) or [MetBrewer](https://github.com/BlakeRMills/MetBrewer) 
+
+.center[
+  &lt;img src="fig/choro/scico.png" width=50%&gt;&lt;/img&gt;&lt;br&gt;
+  **Source** [scico color palette](https://github.com/thomasp85/scico)
+]
+
+---
+
+# The color scale
+
+- For this example, we will use **viridis color palettes**, that are the most suited for accessibility
+
+- There are [several palettes available](https://ggplot2.tidyverse.org/reference/scale_viridis.html), included in the tidyverse:
+.center[
+  &lt;img src="fig/choro/viridis_crop.gif" width=100%&gt;&lt;/img&gt;
+]
+
+---
+
+# The color scale
+
+- **Binned** or **continuous** color scale?
+
+.pull-left[
+
+```r
+p1b&lt;-p1+scale_fill_viridis_b()+labs(title="Binned color scale")
+p1b
+```
+
+![](beyond_choro_part1_files/figure-html/unnamed-chunk-4-1.png)&lt;!-- --&gt;
+]
+
+.pull-right[
+
+```r
+p1c&lt;-p1+scale_fill_viridis_c()+labs(title="Continuous color scale")
+p1c
+```
+
+![](beyond_choro_part1_files/figure-html/unnamed-chunk-5-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# The color scale
+
+- The right breaks? 
+
+.pull-left[
+*For diverging color scale, uneven breaks around midpoint may be hard to read*
+]
+
+.pull-right[
+.center[
+  &lt;img src="fig/choro/uneven_breaks.jpg" width=100%&gt;&lt;/img&gt;&lt;br&gt;
+  **Source** [PolicyViz.com](https://policyviz.com/2020/08/10/on-diverging-color-palettes-in-maps/)
+]
+]
+
+---
+
+# The color scale
+
+- Now, let's change the color scale for our case study!
+
+.pull-left[
+
+```r
+p2&lt;-p1+
+   scale_fill_viridis_b(
+    limits=c(100,70000),
+    n.breaks=6,
+    labels = function(x) paste(x, '$'),
+    option='plasma',
+    na.value = "grey90"
+  )
+
+p2
+```
+]
+
+.pull-right[
+![](beyond_choro_part1_files/figure-html/p5-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# What do we change next?
+
+--
+
+- Antarctica is not so big normally !
+
+- The distortion comes from the **system of projection** used to switch from 3D to 2D
+
+- By default ggplot uses the WGS84/Mercator projection system
+
+---
+
+# Projection
+
+- A 3D spherical surface cannot be converted to a 2D map without distortions
+  - *Such as trying to flatten the skin of an orange&lt;br&gt;(Picture: [Manson and Kernik](https://open.lib.umn.edu/mapping/chapter/3-scale-and-projections/))*
+
+&lt;center&gt;&lt;img src="fig/gis/goode.jpg" width=70%&gt;&lt;/img&gt;&lt;/center&gt;
+
+- It is also necessary to reflect the relief of the Earth's surface
+
+---
+
+# World projection
+
+.pull-left[
+####Mercator projection
+*Deformation increase with latitudes, with Greenland and Antarctica far bigger than reality*
+
+&lt;center&gt;&lt;img src="fig/gis/mercator.jfif" width=70%&gt;&lt;/img&gt;&lt;/center&gt;
+]
+
+.pull-right[
+####Waterman "butterfly"
+*One of the projection with the least distortion*
+&lt;br&gt;&lt;br&gt;
+&lt;center&gt;&lt;img src="fig/gis/waterman.jfif" width=100%&gt;&lt;/img&gt;&lt;/center&gt;
+]
+
+&lt;br&gt;
+**Pictures:** [Wikipedia](https://en.wikipedia.org/wiki/Azimuthal_equidistant_projection)
+
+---
+
+# World projection
+
+- Comparison of Tissot's indicatrix of deformation
+
+.pull-left[
+####Mercator projection
+
+&lt;center&gt;&lt;img src="fig/gis/mercator_tissot.png" width=70%&gt;&lt;/img&gt;&lt;/center&gt;
+]
+.pull-right[
+####Waterman "butterfly"
+
+&lt;center&gt;&lt;img src="fig/gis/waterman_tissot.png" width=100%&gt;&lt;/img&gt;&lt;/center&gt;
+]
+
+&lt;/br&gt;&lt;/br&gt;
+**Pictures:** [Wikipedia](https://en.wikipedia.org/wiki/Azimuthal_equidistant_projection)
+
+---
+
+# Local projection
+
+- Use of local projections to reduce distorsions
+
+&lt;center&gt;&lt;img src="fig/gis/local_noname.png" width=60%&gt;&lt;/img&gt;&lt;/center&gt;
+
+
+---
+
+# Local projection
+
+- Use of local projections to reduce distorsions
+
+&lt;center&gt;&lt;img src="fig/gis/local.png" width=65%&gt;&lt;/img&gt;&lt;/center&gt;
+
+
+---
+
+# World projection
+
+- But, even for world map, it exists many different projections (a good ressource to find them is [proj.org](https://proj.org/en/9.2/operations/projections/index.html))
+
+&lt;center&gt;&lt;img src="fig/choro/proj.png" width=100%&gt;&lt;/img&gt;&lt;/center&gt;
+
+---
+
+# Change world projection
+
+- There is two ways of changing CRS in R: transform CRS before plotting or change projection in ggplot()
+
+.pull-left[
+
+```r
+# Before plotting
+world_robinson&lt;-world_110%&gt;%st_transform(crs='+proj=robin')
+
+ggplot(world_robinson)+geom_sf()
+```
+
+![](beyond_choro_part1_files/figure-html/unnamed-chunk-6-1.png)&lt;!-- --&gt;
+]
+
+.pull-right[
+
+```r
+# Within ggplot()
+ggplot(world_110)+
+  geom_sf()+
+  coord_sf(crs='+proj=robin')
+```
+
+![](beyond_choro_part1_files/figure-html/unnamed-chunk-7-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Change world projection
+
+- Let's apply the second method to our map
+
+
+```r
+p2+coord_sf(crs='+proj=robin')
+```
+
+&lt;img src="beyond_choro_part1_files/figure-html/unnamed-chunk-8-1.png" width="50%" /&gt;
+
+---
+
+# Change world projection
+
+- Before going further, you may **try different projections for p2**, using [proj.org](https://proj.org/en/9.2/operations/projections/index.html) as a reference 
+
+--
+
+- **What is missing** to see the map projection more clearly?
+
+--
+
+- **A graticule** !
+  - *A grid of lines representing longitudes and latitudes*
+
+---
+
+# Create graticule
+
+- To create and project a graticule to the map:
+
+.pull-left[
+
+```r
+grat &lt;- st_graticule(lat = c(-89.9, seq(-80, 80, 20), 89.9))
+
+p3&lt;-p2+
+  geom_sf(
+    grat,
+    mapping=aes(geometry=geometry),
+    alpha=0.5
+  )+
+  coord_sf(crs='+proj=robin')
+
+p3
+```
+]
+
+.pull-right[
+![](beyond_choro_part1_files/figure-html/p6-out-1.png)&lt;!-- --&gt;
+]
+---
+
+# Create graticule
+
+- Finally, maps created with ggplot() may be customized as any other plots. Let's change the theme here:
+
+.pull-left[
+
+```r
+col_back&lt;-'#EEE2DF'
+
+theme_map&lt;-theme_void()+
+  theme(
+    plot.margin=margin(1,1,1,1,'cm'),
+    plot.background = element_rect(
+      fill=col_back,color=NA
+    ),
+    legend.title = element_text(
+      face='bold',
+      margin=margin(0,0,0.25,0,'cm')
+    )
+  )
+
+p4&lt;-p3+
+  theme_map
+
+p4
+```
+]
+
+.pull-right[
+![](beyond_choro_part1_files/figure-html/p7-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+background-color: #e76f51
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Beyond choropleth** &lt;/span&gt;
+
+### Cartograms
+
+---
+
+# Beyond choropleth
+
+- Now that we've seen how to make simple choropleths, the first transformation we're going to make is to turn them into cartograms with {cartogram}
+
+
+```r
+# Install packages
+#install.packages('cartogram')
+
+# Load packages
+library(cartogram)
+```
+
+- With a cartogram, it's the **size of the polygonal** entities that changes rather than the color
+
+- There are several type of cartograms:
+  - Contiguous, discontiguous and Dorling
+
+---
+
+# Beyond choropleth
+
+&lt;center&gt;&lt;img src="fig/gis/map/human_pop_mini.png" width=100%&gt;&lt;/img&gt;&lt;/center&gt;
+
+[Full image with high resolution](https://bjnnowak.github.io/gis/map_gallery_population.html)
+
+---
+
+# Prepare data
+
+- Now let's see how we can make a Dorling cartogram
+
+- To make a cartogram, we will (i) work with a projected map and (ii) remove NAs from the variable of interest
+
+
+```r
+world_carto &lt;- clean%&gt;%
+  st_transform(crs='+proj=robin')%&gt;%
+  drop_na(gdp_per_capita)%&gt;%
+  filter(continent!="Seven seas (open ocean)")
+```
+
+---
+
+# Make Dorling cartogram
+
+- How to make a Dorling cartogram with *cartogram_dorling()*:
+
+
+```r
+dorl&lt;-cartogram::cartogram_dorling(
+  world_carto,              # input map
+  weight='gdp_per_capita',  # variable of intereset
+  k = 4,                    # Share of the bounding box of x filled by the larger circle
+  m_weight = 0.05,          # Movement from centroid (from 0 to 1, with 0=no movement)
+  itermax = 1000
+)
+```
+
+---
+
+# Plot Dorling cartogram
+
+- We are now ready to plot this cartogram
+
+.pull-left[
+
+```r
+ggplot(dorl)+
+  geom_sf()
+```
+]
+
+.pull-right[
+![](beyond_choro_part1_files/figure-html/p8-out-1.png)&lt;!-- --&gt;
+]
+
+--
+&lt;p style="color:#ff0000;"&gt;
+&lt;b&gt;You may try with different values for k and m_weight&lt;/b&gt;
+&lt;/p&gt;
+
+---
+
+# Customize Dorling cartogram
+
+- Not really beautiful, isn'it? We may now change the country colors based on continent (as GDP is already given by the size)
+
+.pull-left[
+
+```r
+#install.packages('scico')
+col_pal &lt;- scico::scico(6, palette = 'bam')
+
+d1&lt;-ggplot(dorl,aes(fill=continent))+
+  geom_sf()+
+  scale_fill_manual(values=col_pal)
+
+d1
+```
+]
+
+.pull-right[
+![](beyond_choro_part1_files/figure-html/p9-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Customize Dorling cartogram
+
+- Add labels for country names (keeping only country with top 10 GDP) 
+
+.pull-left[
+
+```r
+d2&lt;-d1+
+  geom_sf_text(
+    dorl%&gt;%arrange(-gdp_per_capita)%&gt;%head(10),
+    mapping=aes(label=name),
+    inherit.aes='FALSE'
+  )
+
+d2
+```
+]
+
+.pull-right[
+![](beyond_choro_part1_files/figure-html/p10-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Customize Dorling cartogram
+
+- Apply custom theme
+
+.pull-left[
+
+```r
+d3&lt;-d2+
+  theme_map
+
+d3
+```
+]
+
+.pull-right[
+![](beyond_choro_part1_files/figure-html/p11-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# To go further...
+
+- A tutorial showing [how to customize a Dorling cartogram to plot several subvariables](https://r-graph-gallery.com/web-dorling-cartogram-with-R.html)
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
