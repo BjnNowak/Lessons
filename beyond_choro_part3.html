@@ -770,8 +770,36 @@ final_2
 
 - ... but you would still have to optimize the number and size of the points for the final layout !
 
+---
 
+# To go further...
 
+- As practice, you may apply the same method for Italy, using the country border from {rnaturalearth} (see [first session](https://bjnnowak.github.io/Lessons/beyond_choro_part1#26)) and this raster of population:
+
+.pull-left[
+
+```r
+# Population density in Italy in km2
+pop &lt;- terra::rast('https://github.com/BjnNowak/TidyTuesday/raw/main/data/italy_pop_l93.tif')
+# Rename raster band to "pop"
+names(pop) &lt;- "pop"
+
+ggplot()+
+  tidyterra::geom_spatraster(
+    data=pop,
+    # Lower number of cells to accelerate rendering
+    maxcell = 1e+05
+  )+
+  scale_fill_viridis_c()+
+  # CRS for Italia
+  coord_sf(crs='EPSG:6875')+
+  theme_void()
+```
+]
+
+.pull-right[
+![](beyond_choro_part3_files/figure-html/p15-out-1.png)&lt;!-- --&gt;
+]
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
