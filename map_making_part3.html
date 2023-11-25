@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Map making with R</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Benjamin Nowak" />
+    <script src="libs/header-attrs-2.21/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/bn.css" type="text/css" />
+    <link rel="stylesheet" href="css/bn-fonts.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Map making with R
+]
+.subtitle[
+## <strong>Part 3</strong><br>Point valued maps
+]
+.author[
+### Benjamin Nowak
+]
+.date[
+### December 2023
+]
+
+---
+
+
+background-color: #e76f51
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Introduction** &lt;/span&gt;
+
+### Bertin's point valued maps
+
+---
+
+# Jacques Bertin 
+
+-  **Jacques Bertin** (1918-2010) was a French cartographer
+
+.pull-left[
+- His scientific work focuses on the theoretical and practical aspects of all graphic media (diagrams, maps and graphs)
+]
+
+.pull-right[
+&lt;img src="https://upload.wikimedia.org/wikipedia/commons/4/4c/Jacques_Bertin_71.jpg" width=100%&gt;&lt;/img&gt;
+**Picture** [Wikipedia](https://fr.wikipedia.org/wiki/Jacques_Bertin_(cartographe)
+]
+
+
+---
+
+# Jacques Bertin 
+
+-  **Jacques Bertin** (1918-2010) was a French cartographer
+
+.pull-left[
+- He summarized his work in a major work entitled "La sémiologie graphique" (Graphic semiology), which provides an almost exhaustive summary of the advantages and disadvantages of different methods of graphic representation
+]
+
+.pull-right[
+&lt;img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Bertin_semiologie-graphique.png/659px-Bertin_semiologie-graphique.png" width=80%&gt;&lt;/img&gt;
+**Picture** [Wikipedia](https://fr.wikipedia.org/wiki/Jacques_Bertin_(cartographe)
+]
+
+---
+
+# Jacques Bertin 
+
+-  **Jacques Bertin** (1918-2010) was a French cartographer
+
+.pull-left[
+- Bertin's typology of graphical representation methods is the basis of many of today's graphics softwares (including ggplot2()!)
+]
+
+.pull-right[
+&lt;img src="https://metrhispanique.files.wordpress.com/2013/03/biblio-33-bertin.jpg" width=80%&gt;&lt;/img&gt;
+**Picture** [Javier Barros Guerton](https://metrhispanique.com/2013/03/11/biblio-33-semiologie-graphique/)
+]
+
+---
+
+# Jacques Bertin 
+
+-  **Jacques Bertin** (1918-2010) was a French cartographer
+
+.pull-left[
+- He also created a projection system: 
+*"Projection with regional compensation, in which the compensation is no longer homogeneous, but is sought in a greater deformation of the oceans, to the benefit of a lesser deformation of the continents."*
+]
+
+.pull-right[
+&lt;img src="https://visionscarto.net/local/cache-vignettes/L782xH1024/36696907916_06f9-fa799-b7541.jpg?1690206411" width=80%&gt;&lt;/img&gt;
+**Picture** [visionscarto.net](https://visionscarto.net/projection-bertin-1953)
+]
+
+---
+
+# Jacques Bertin 
+
+-  **Jacques Bertin** (1918-2010) was a French cartographer
+
+.pull-left[
+- One of is most famous work is the point valued maps
+- With this type of map, the representation of the variable of interest by a variation in point size should be less subjective than a classic choropleth color gradient 
+]
+
+.pull-right[
+&lt;img src="https://raw.githubusercontent.com/BjnNowak/Lessons/main/fig/R_2/bertin.png" width=80%&gt;&lt;/img&gt;
+]
+
+---
+
+# Jacques Bertin 
+
+-  **Jacques Bertin** (1918-2010) was a French cartographer
+
+.pull-left[
+&lt;p style="color:red;"&gt;
+In this tutorial we will see how we can reproduce Bertin's point valued maps with ggplot2!
+&lt;/p&gt;
+]
+
+.pull-right[
+&lt;img src="https://raw.githubusercontent.com/BjnNowak/Lessons/main/fig/R_2/bertin.png" width=80%&gt;&lt;/img&gt;
+]
+
+---
+
+background-color: #e76f51
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Point valued maps** &lt;/span&gt;
+
+### Reproduce the classic Bertin's style
+
+---
+
+# Point valued maps from vectors
+
+.pull-left[
+- In the original Bertin's map, valued points are used as patterns instead of one color gradient
+  - One pattern **per department**, depending on the population density
+]
+
+.pull-right[
+&lt;img src="https://raw.githubusercontent.com/BjnNowak/Lessons/main/fig/R_2/bertin.png" width=80%&gt;&lt;/img&gt;
+]
+
+---
+
+# Point valued maps from vectors
+
+- We will apply this style for another case study: the **percentage of members of a sport association per French department** for metropolitan France (Data from [Observatoire des territoires](https://www.observatoire-des-territoires.gouv.fr/nombre-de-licencies-sportifs))
+
+- Data may be loaded as follows: 
+
+```r
+library(tidyverse)
+library(sf)
+
+# The original Bertin style: valued points as patterns instead of color gradients for vector files
+map&lt;-sf::read_sf('https://github.com/BjnNowak/lego_map/raw/main/data/france_sport.gpkg')%&gt;%
+  # Converting to French crs: Lambert-93 (EPSG:2154)
+  st_transform(2154)
+```
+
+--
+
+&lt;p style="color:#ff0000;"&gt;
+&lt;b&gt;Practice:&lt;/b&gt; Make a choropleth based on the % of sport club member, stored in the &lt;i&gt;'value'&lt;/i&gt; column
+&lt;/p&gt;
+
+---
+
+# Point valued maps from vectors
+
+- An example of a classic choropleth:
+
+.pull-left[
+
+```r
+library(scico)
+
+ggplot(map, aes(fill=value))+
+  geom_sf()+
+  labs(fill="Club member")+
+  scale_fill_scico(
+    palette="acton",
+    direction=-1 # To reverse color palette
+  )+
+  theme_void()
+```
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p1-out-1.png)&lt;!-- --&gt;
+]
+
+--
+
+&lt;p style="color:#ff0000;"&gt;
+&lt;b&gt;Time to convert this choropleth in a point valued map!&lt;/b&gt;
+&lt;/p&gt;
+
+---
+
+# Point valued maps from vectors
+
+- The main steps will be: 
+  1. Make a grid from basemap
+  2. Extract centroid for each cell of the grid
+  3. Intersect centroid and basemap to get the variable of interest value for each point
+  4. Customize layout
+
+---
+
+# Make grid
+
+- First step is to **create a grid** from the basemap
+
+.pull-left[
+
+```r
+grd_simple&lt;-st_make_grid(
+  map,           # Basemap
+  n=c(45,45),    # Total number of points per lon/lat
+  square = TRUE  # Better use square than hexagons for point valued maps
+)%&gt;%
+  # Convert grid to sf object
+  st_sf()
+
+ggplot(grd_simple)+
+  geom_sf()
+```
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p2-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Extract centroid
+
+- Second step is to **extract centroid** for each cell of the basemap
+
+.pull-left[
+
+```r
+grd_cent&lt;-grd_simple%&gt;%
+  st_centroid()
+
+ggplot(grd_cent)+
+  geom_sf()
+```
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p3-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Intersect centroid and basemap
+
+- Third step is to **intersect centroid and basemap** to assign of value of the variable of interest for each centroid
+
+.pull-left[
+
+```r
+# Intersect grid with polygons
+grd&lt;-grd_cent%&gt;%
+  st_intersection(map)
+
+ggplot(grd,aes(size=value))+
+  geom_sf()+
+  scale_size(range=c(0,3))
+```
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p4-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Customize layout
+
+- Finally we will customize the layout for a better rendering. First, we will convert our continuous scale to a binned variable, which will allow to limit the effect of more extreme values
+
+- We will do so by creating a new column in our point valued map, that we will fill with the class attribute:
+
+
+```r
+grd&lt;-grd%&gt;%
+  mutate(clss=case_when(
+    value&lt;18~'1',
+    value&lt;20~'2',
+    value&lt;22~'3',
+    value&lt;24~'4',
+    value&lt;26~'5',
+    TRUE~'6'
+  ))
+```
+
+---
+
+# Customize layout
+
+- For the final layout, I like to keep the departement borders as background:
+
+.pull-left[
+
+```r
+final&lt;-ggplot()+
+  geom_sf(
+    map,
+    mapping=aes(geometry=geom),
+    color="black",fill="white"
+  )+
+  theme_void()
+
+final
+```
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p5-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Customize layout
+
+- Adding the point valued layer:
+
+.pull-left[
+
+```r
+final&lt;-final+
+  geom_sf(
+    grd,
+    # Change point size accoring to value of interest
+    mapping=aes(size=clss,geometry=geometry),
+    # pch=21 for points with fill and color attributes
+    pch=21,
+    fill="black",color="white",stroke=0.5
+  )
+
+final
+```
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p6-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Customize layout
+
+- Customize point valued layer:
+
+.pull-left[
+
+```r
+final&lt;-final+
+  scale_size_manual(
+    values=seq(0.5,4.25,0.75),
+    labels=c("&lt; 18 %","&lt; 20 %","&lt; 22 %","&lt; 24 %","&lt; 26 %", "≥ 26 %")
+  )+
+  labs(size='Sport member')
+
+final
+```
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p7-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Final map
+
+- This workflow allows you to convert a choropleth into point valued map
+
+.pull-left[
+- Some parameters may change:
+  - Optimal number of centroid cells is most of the time around 50*50, but may vary for lon/lat for countries with more "rectangular" size
+  - Classes and point sizes need to be ajusted for each case study
+
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p7-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# To go further
+
+
+.pull-left[
+For other creative examples, the *st_grid()* and *st_centroid()* functions can also be used to create lego-style choropleths, as shown in [this tutorial](https://r-graph-gallery.com/web-choropleth-map-lego-style.html)
+]
+
+.pull-right[
+
+&lt;img src="https://raw.githubusercontent.com/BjnNowak/lego_map/main/lego_map.png" width=100%&gt;&lt;/img&gt;
+
+]
+
+---
+
+background-color: #e76f51
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Point valued maps** &lt;/span&gt;
+
+### Point valued maps from raster
+
+---
+
+# Point valued maps from raster
+
+- We will now make a point valued map of population density in France
+
+- But, compared with Jacques Bertin's work, we'll be taking advantage of the new data available by starting from a raster (with population densities per pixel), whereas the original map was based on population densities per department (see map in previous slides)
+
+---
+
+# Point valued maps from raster
+
+- To work with raster in R, we will need to load two new packages: [{terra}](https://rspatial.org/pkg/1-introduction.html) and [{tidyterra}](https://dieghernan.github.io/tidyterra/articles/tidyterra.html) 
+
+
+```r
+#install.packages('terra')
+#install.packages('tidyterra')
+
+library(terra)     # For raster population file
+library(tidyterra) # To plot terra rasters with ggplot()
+```
+
+---
+
+# Load data
+
+- For this tutorial, I uploaded a basemap of French departments and a raster of population density for France
+- Population density has been downloaded from the [Global Human Settlement Layer](https://ghsl.jrc.ec.europa.eu/download.php?ds=pop)
+-Data may loaded directy in R as shown below:
+
+
+```r
+# France map
+fr &lt;- sf::read_sf('https://github.com/BjnNowak/bertin_tuto/raw/main/map/france_sport.gpkg')
+
+# Population density in km2
+pop &lt;- terra::rast('https://github.com/BjnNowak/bertin_tuto/raw/main/map/france_pop_l93_2.tif')
+
+# Rename raster band to "pop"
+names(pop) &lt;- "pop"
+```
+---
+
+# Plot raster
+
+France population density is a **raster** layer (SpatRaster object) that may be plotted with **geom_spatraster()**: 
+
+.pull-left[
+
+
+```r
+ggplot()+
+  tidyterra::geom_spatraster(
+    data=pop,
+    # Lower number of cells to accelerate rendering
+    maxcell = 1e+05
+  )+
+  scale_fill_viridis_c()+
+  coord_sf(crs='EPSG:2154')+
+  theme_void()
+```
+
+]
+
+.pull-right[
+
+![](map_making_part3_files/figure-html/p8-out-1.png)&lt;!-- --&gt;
+
+]
+
+---
+
+# Plot raster
+
+France population density is a **raster** layer (SpatRaster object) that may be plotted with **geom_spatraster()**: 
+
+.pull-left[
+- There is a strong heterogeneity of population density between the Paris region and the rest of France
+- But we already now a solution for this type of issue from our first case study: convert to a binned scale
+- We will come back to that later...
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p8-out-1.png)&lt;!-- --&gt;
+]
+
+&lt;br&gt;
+
+
+---
+
+# Main steps
+
+- The main steps to convert our raster to a point valued map will be:
+  1. Aggregate raster
+  2. Extract centroid for each pixel
+  3. Customize map
+  
+
+---
+
+# Aggregate raster
+
+- **A map with valued points will not be legible for a large number of points**. So, before converting pixels into points, we will degrade the resolution of the raster. A number of 100 points per side to be represented seems reasonable. Let's calculate the aggregation factor corresponding to this resolution: 
+
+
+```r
+# Compute factor to reduce raster to 100 rows:
+factor &lt;- round(nrow(pop)/100)
+```
+
+---
+
+# Aggregate raster
+
+- We can now degrade the resolution of the raster by the corresponding factor:
+
+
+```r
+# Aggregate to 100 rows
+pop_agg &lt;- terra::aggregate(
+  pop, fact = factor,
+  fun = "mean", na_rm=T
+)
+
+# Replace potential NAs by 0
+pop_agg[is.na(pop_agg)] &lt;- 0
+```
+
+---
+
+# Extract centroids
+
+- Now that the raster is at the right resolution, we're going to extract the centroid of each pixel. This is a two-step process:
+
+  - convert the raster to tibble;
+
+  - convert the tibble obtained into a point vector.
+
+
+```r
+# 1. Convert raster to tibble
+pop_tib &lt;- as_tibble(
+  pop_agg,
+  xy = TRUE,               # Get centroid of each cell 
+  na.rm = TRUE
+)
+
+# 2. Convert tibble to point vector (sf object)
+sf_pop &lt;- pop_tib%&gt;%
+  st_as_sf(
+    coords = c("x","y"), # Columns with longitude/latitude 
+    crs= 2154            # Set CRS (here Lambert-93)
+  )
+```
+
+---
+
+# Extract centroids
+
+- Let's take a look to the resulting vector:
+
+.pull-left[
+
+```r
+# This is a sf object that may now be plotted with geom_sf() :
+ggplot(sf_pop)+
+  geom_sf() 
+```
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p9-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Extract centroids
+
+- As you can see, we've also kept the points outside metropolitan France. In this case, this comes from replacing all null values with 0. But, as we have a spatial object, **this can easily be corrected by an intersection**:
+
+.pull-left[
+
+```r
+# Keep only points inside metropolitan France
+sf_pop_metro &lt;- st_intersection(sf_pop, fr)
+
+ggplot(sf_pop_metro)+
+  geom_sf()
+```
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p10-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Customize map
+
+- Almost there! But, before plotting the final map, time to create a binned scale to take care of the problem of strong population disparities between the Paris region and the rest of the country:
+
+
+```r
+# Create classes
+sf_pop_metro &lt;- sf_pop_metro%&gt;%
+  mutate(clss=case_when(
+    pop&lt;20~"A",
+    pop&lt;70~"B",
+    pop&lt;140~"C",
+    pop&lt;200~"D",
+    TRUE~"E"
+  ))
+```
+
+---
+
+# Customize map
+
+- Final map! First, borders of the French departements: 
+
+.pull-left[
+
+```r
+final_2 &lt;- ggplot()+
+  geom_sf(
+    fr,
+    mapping=aes(geometry=geom),
+    color="black",
+    fill="white"
+  )+
+  theme_void()
+
+final_2
+```
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p11-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Customize map
+
+- Add point valued for population density: 
+
+.pull-left[
+
+```r
+final_2 &lt;- final_2+
+  geom_sf(
+    sf_pop_metro,
+    mapping=aes(geometry=geometry,size=clss),
+    # Use a point with a border AND a fill
+    pch=21,color="white",fill="black",stroke=0.05
+  )
+
+final_2
+```
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p12-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Customize map
+
+- Customize points: 
+
+.pull-left[
+
+```r
+final_2 &lt;- final_2+
+  scale_size_manual(
+    values=c(0.5,1,1.5,2,2.5),
+    label=c("&lt;20 inhabitants","20 to 69","70 to 139","140 to 199","≥200 inhabitants")
+  )
+
+final_2
+```
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p13-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Customize map
+
+- Finally we will customize the labels, this time using [{ggtext}](https://wilkelab.org/ggtext/articles/theme_elements.html) for more possibilities 
+
+
+```r
+# install.packages('ggtext')
+library(ggtext)
+
+theme_custom &lt;- theme_void()+
+  theme(
+    legend.title = element_markdown(),
+    plot.title = element_markdown(hjust=0.5),
+    plot.subtitle = element_text(hjust=0.5,color="grey40")
+  )
+```
+
+---
+
+# Customize map
+
+- Add labels to map:
+
+.pull-left[
+
+```r
+final_2 &lt;- final_2+
+  labs(
+    title="**Population density in France**",
+    subtitle="in the way of Jacques Bertin",
+    size="**Population density**&lt;br&gt;&lt;span style='color:grey'&gt;Inhabitants per km&lt;sup&gt;2&lt;/sup&gt;&lt;/span&gt;"
+  )+
+  theme_custom
+
+final_2
+```
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p14-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# To go further...
+
+- Now that you now the basics of creating point valued maps, you may also use [{bertin}](https://github.com/BjnNowak/bertin), a customized package I created to summarize the worflows we saw today (for vectors or rasters)...
+
+- ... but you would still have to optimize the number and size of the points for the final layout !
+
+---
+
+# To go further...
+
+- As practice, you may apply the same method for Italy, using the country border from {rnaturalearth} (see [first session](https://bjnnowak.github.io/Lessons/beyond_choro_part1#26)) and this raster of population:
+
+.pull-left[
+
+```r
+# Population density in Italy in km2
+pop &lt;- terra::rast('https://github.com/BjnNowak/TidyTuesday/raw/main/data/italy_pop_l93.tif')
+# Rename raster band to "pop"
+names(pop) &lt;- "pop"
+
+ggplot()+
+  tidyterra::geom_spatraster(
+    data=pop,
+    # Lower number of cells to accelerate rendering
+    maxcell = 1e+05
+  )+
+  scale_fill_viridis_c()+
+  # CRS for Italia
+  coord_sf(crs='EPSG:6875')+
+  theme_void()
+```
+]
+
+.pull-right[
+![](map_making_part3_files/figure-html/p15-out-1.png)&lt;!-- --&gt;
+]
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
