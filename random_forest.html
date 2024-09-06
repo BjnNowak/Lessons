@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Decision trees and random forests with R</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Benjamin Nowak" />
+    <script src="libs/header-attrs-2.25/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/bn.css" type="text/css" />
+    <link rel="stylesheet" href="css/bn-fonts.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Decision trees and random forests with R
+]
+.subtitle[
+## Application to yield prediction
+]
+.author[
+### Benjamin Nowak
+]
+.date[
+### September 2024
+]
+
+---
+
+
+background-image: url(fig/back/hill.jpg)
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Introduction** &lt;/span&gt;
+
+### Dataset for this tutorial
+
+---
+
+# Dataset
+
+-  Dataset from Cernay *et al.* (2016) ["A global experimental dataset for assessing grain legume production"](https://www.nature.com/articles/sdata201684#article-info) 
+
+- *"Tillage, fertilization, pest and irrigation management are systematically recorded for each of the 8,581 {crop,field site,growing season,treatment combinations}"*
+
+- Here, focus on **legume species** and **fertilization rate** only to predict yield
+
+
+---
+
+# Load dataset
+
+Let's start by loading the datasets
+
+
+```r
+# Install extensions (to do only once)
+# install.packages("tidyverse")
+
+# Load extensions (to repeat at each session)
+library(tidyverse)
+
+# Load data 
+crop&lt;-read_delim('https://raw.githubusercontent.com/BjnNowak/dataset_randomforest/main/Crop.csv', delim=',')
+ferti&lt;-read_delim('https://raw.githubusercontent.com/BjnNowak/dataset_randomforest/main/Fertilization.csv', delim=',')
+```
+
+---
+
+# Data cleaning
+
+- We now need to create a single table with the variable of interest (yield) and the explanatory variables (species, fertilization for N, P and K).
+
+- Take some time to open the *crop* table and look at the data
+
+- &lt;span style="color:red;font-weight:bold;"&gt;What selection could we make for this table?&lt;/span&gt;
+
+---
+
+# Data cleaning
+
+- Starting with the crop table:
+
+
+```r
+crop_clean&lt;-crop%&gt;%
+  # Drop row with no yield values
+  drop_na(Crop_Yield_Grain)%&gt;%
+  # Filter for legumes only 
+  filter(Crop_Species_Legume==1)%&gt;%
+  # Keeping only a few columns
+  select(
+    # ID will be used later to join the ferti table
+    IDCrop,
+    # Change column name for easier use
+    Species=Crop_Species_Common_Name,
+    Yield=Crop_Yield_Grain
+  )
+```
+
+--
+
+- &lt;span style="color:red;font-weight:bold;"&gt;Now, how can we select only the most represented legume species ?&lt;/span&gt;
+
+---
+
+# Data cleaning
+
+
+```r
+# Count number of case per crop
+sp_count&lt;-crop_clean%&gt;%
+  mutate(ct=1)%&gt;%
+  group_by(Species)%&gt;%
+  summarize(sm=sum(ct))%&gt;%
+  ungroup()
+
+# Extract name of the top 3 crop in a vector
+sub&lt;-sp_count%&gt;%
+  arrange(-sm)%&gt;%  # Arrange table in a descending order
+  head(3)%&gt;%       # Select 3 first rows
+  pull(Species)    # Keep only values for the "Species" column
+
+# Use this vector to subset the crop table
+crop_clean&lt;-crop_clean%&gt;%
+  filter(Species%in%sub)
+```
+
+---
+
+# Data cleaning
+
+- &lt;span style="color:red;font-weight:bold;"&gt;Before going further, make a plot to compare the yields of the 3 most represented species.&lt;/span&gt;
+
+--
+
+.pull-left[
+
+```r
+# Load basemap
+ggplot(crop_clean,aes(x=Species,y=Yield))+
+  geom_jitter(
+    alpha=0.1,
+    height=0,width=0.33
+  )+
+  geom_boxplot(
+    outlier.shape = NA,
+    fill=NA
+  )+
+  theme_light()
+```
+]
+
+.pull-right[
+![](random_forest_files/figure-html/p1-out-1.png)&lt;!-- --&gt;
+]
+
+
+---
+
+# Data cleaning
+
+- Now, we need to clean the *ferti* table
+
+- The three elements (N, P and K) are mixed in this table, and the corresponding element is identified in the *Fertilization_NPK* column
+
+- The fertilizer rate is given in the *Fertilization_NPK_Dose*, with a NA value when there was no fertilization
+
+- To replace the NAs by 0 :
+
+```r
+ferti&lt;-ferti%&gt;%
+  mutate(
+    # Convert to numeric
+    Fertilization_NPK_Dose=as.numeric(Fertilization_NPK_Dose),
+    # Replace NAs by 0
+    Fertilization_NPK_Dose=replace_na(Fertilization_NPK_Dose,0)
+  )
+```
+
+
+---
+
+# Data cleaning
+
+- We can then create a table gathering only the information for N fertilization:
+
+```r
+ferti_N&lt;-ferti%&gt;%
+  # Filter for N fertilization
+  filter(Fertilization_NPK=="N")%&gt;%
+  # Keep only two columns
+  select(
+    # Keep ID for join with "crop" table
+    IDCrop=IDCrop_Crop,
+    # Keep fertiliser rate
+    Ferti_N=Fertilization_NPK_Dose
+  )
+```
+
+- &lt;span style="color:red;font-weight:bold;"&gt;Similarly, create two other tables for P and K fertilization.&lt;/span&gt;
+
+---
+
+# Data cleaning
+
+
+```r
+# For phosphorus
+ferti_P&lt;-ferti%&gt;%
+  filter(Fertilization_NPK=="P")%&gt;%
+  select(
+    IDCrop=IDCrop_Crop,
+    Ferti_P=Fertilization_NPK_Dose
+  )
+
+# For potassium
+ferti_K&lt;-ferti%&gt;%
+  filter(Fertilization_NPK=="K")%&gt;%
+  select(
+    IDCrop=IDCrop_Crop,
+    Ferti_K=Fertilization_NPK_Dose
+  )
+```
+
+---
+
+# Data cleaning
+
+- We may now join all tables together: 
+
+
+```r
+data&lt;-crop_clean%&gt;%
+  left_join(ferti_N)%&gt;%
+  left_join(ferti_P)%&gt;%
+  left_join(ferti_K)%&gt;%
+  drop_na() # Make sure there is no NAs left 
+```
+
+---
+
+# Data cleaning
+
+- &lt;span style="color:red;font-weight:bold;"&gt;Before going further, make a plot to check the effect of phosphorus fertilization on soybean yield.&lt;/span&gt;
+
+--
+
+.pull-left[
+
+```r
+# Load basemap
+ggplot(
+  data%&gt;%filter(Species=="Soybean"),
+  aes(x=Ferti_P,y=Yield))+
+  geom_point(alpha=0.1,)+
+  geom_smooth()+
+  theme_light()
+```
+]
+
+.pull-right[
+![](random_forest_files/figure-html/p2-out-1.png)&lt;!-- --&gt;
+]
+
+- Difficult to conclude...
+
+---
+
+background-image: url(fig/back/hill.jpg)
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Decision tree** &lt;/span&gt;
+
+---
+
+# Split dataset
+
+- Before making a decision tree, we need to split the data in a *train* and *test* dataset:
+
+
+```r
+# Split between train/test 
+set.seed(123)
+
+train  &lt;- data %&gt;% 
+  sample_frac(0.8) # 80% in "train"
+
+test  &lt;- data %&gt;% 
+  anti_join(train) #... the rest in "test"
+```
+
+---
+
+# Load package
+
+- We need to load two packages:
+
+
+```r
+# To do only once:
+#install.packages('rpart')
+#install.packages('rpart.plot')
+
+# To repeat at each session:
+library(rpart)       # to make decision trees 
+library(rpart.plot)  # to plot outputs
+```
+
+---
+
+# Decision tree
+
+- Make decision tree and look at the output:
+
+.pull-left[
+
+```r
+# Make 1st decision tree
+dt1&lt;-rpart(
+  Yield~Species+Ferti_N+Ferti_P+Ferti_K,
+  data=train,
+  method="anova" # For regression trees
+)
+
+rpart.plot(dt1)
+```
+]
+
+.pull-right[
+![](random_forest_files/figure-html/3-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Principles
+
+.pull-left[
+- Variables and split points are chosen using an algorithm that only considers a single split point at a time 
+
+- Greedy algorithm : making the locally optimal choice
+
+- At each node, choice of the cutting which minimizes the error
+]
+
+.pull-right[
+- Ex: Find the largest sum ?
+&lt;img src="fig/rf/image1.gif" width=100%&gt;&lt;/img&gt;
+Source: [Swfung8](https://commons.wikimedia.org/w/index.php?curid=14953844)
+]
+
+---
+
+# Tune a decision tree
+
+- One important choice: the **complexity parameter (Cp)**
+
+
+```r
+# Make 2nd decision tree
+dt2&lt;-rpart(
+  Yield~Species+Ferti_N+Ferti_P+Ferti_K,
+  data=train,
+  method="anova",
+  control=rpart.control(cp=0) # Cp=0 =&gt; No pruning
+)
+```
+
+---
+
+# Effect of complexity parameter
+
+.pull-left[
+- With pruning
+
+```r
+rpart.plot(dt1)
+```
+
+![](random_forest_files/figure-html/unnamed-chunk-11-1.png)&lt;!-- --&gt;
+]
+
+.pull-right[
+- Without pruning
+
+```r
+rpart.plot(dt2)
+```
+
+![](random_forest_files/figure-html/unnamed-chunk-12-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Effect of complexity parameter
+
+- How to choose the value for Cp ?
+
+.pull-left[
+
+```r
+plotcp(dt1)
+```
+
+![](random_forest_files/figure-html/unnamed-chunk-13-1.png)&lt;!-- --&gt;
+]
+
+.pull-right[
+
+```r
+plotcp(dt2)
+```
+
+![](random_forest_files/figure-html/unnamed-chunk-14-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Effect of complexity parameter
+
+- How to choose the value for Cp ?
+
+- Default behaviour in {rpart}: *"if any split does not increase the overall R2 of the model by at least cp (where R2 is the usual linear-models definition) then that split is decreed to be, a priori, not worth pursuing.”*
+
+---
+
+# Evaluation of the model
+
+- The model may be applied to the *test* dataset (that has not be used to create the decision tree) as follows:
+
+
+```r
+# Predict yield for the "test" dataset:
+pred&lt;-predict(dt1, test)
+
+# Add result to the "test" table:
+test&lt;-test%&gt;%
+  bind_cols(Yield_pred=pred)
+```
+
+---
+
+# Evaluation of the model
+
+- &lt;span style="color:red;font-weight:bold;"&gt;You can now make a plot to compare the monitored and predicted yields for garden pea.&lt;/span&gt;
+
+.pull-left[
+
+```r
+ggplot(
+  test%&gt;%filter(Species=="Garden pea"),
+  aes(x=Yield,y=Yield_pred))+
+  geom_point()+
+  labs(
+    x="Monitored yield",
+    y="Predicted yield"
+  )+
+  theme_light()
+```
+]
+
+.pull-right[
+![](random_forest_files/figure-html/p4-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Evaluation of the model
+
+- We can also compute a R&lt;sup&gt;2&lt;/sup&gt; to evaluate the global performance of the model
+
+
+```r
+LM&lt;-lm(data=test,Yield_pred~Yield)
+summary(LM)$r.squared
+```
+
+```
+## [1] 0.2912774
+```
+
+---
+
+# Decision trees
+
+.pull-left[
+**Advantages**
+- Low computational cost
+- Works with quantitative and qualitative variables
+- Easily understood modeling method, with access to decision variables
+]
+
+.pull-right[
+**Limits**
+- Low accuracy compared to other methods
+- Low robustness, with high sensibility to change in traning dataset
+- Risk of overfitting
+]
+
+**To go further:** Random forests
+
+---
+
+background-image: url(fig/back/hill.jpg)
+background-size: cover
+class: center, bottom, inverse
+
+# &lt;span style='font-size:55px'&gt; **Random forest** &lt;/span&gt;
+
+---
+
+# Principle
+
+.pull-left[
+- Creation of multiple decision trees from random draws within the training database
+]
+
+.pull-right[
+&lt;img src="fig/rf/image2.png" width=100%&gt;&lt;/img&gt;
+Source: [Alteryx](https://community.alteryx.com/t5/Alteryx-Designer-Knowledge-Base/Seeing-the-Forest-for-the-Trees-An-Introduction-to-Random-Forest/ta-p/158062)
+]
+
+---
+
+# Principle
+
+
+- Test of each tree with the samples not used to build the tree
+
+- Out of the bag (OOB) error: mean prediction error for all trees
+
+&lt;img src="fig/rf/image3.png" width=100%&gt;&lt;/img&gt;
+
+---
+
+# Make random forest
+
+- Let's make a random forest for our case study:
+
+
+```r
+#install.packages('randomForest)
+library(randomForest)
+
+rf &lt;- randomForest(
+  Yield~Species+Ferti_N+Ferti_P+Ferti_K,
+  data=train,
+  type=regression,
+  ntree=500
+)
+```
+---
+
+# Make random forest
+
+- Evaluation of the relative importance of the variables:
+
+.pull-left[
+
+```r
+varImpPlot(rf)
+```
+]
+
+.pull-right[
+![](random_forest_files/figure-html/p4b-out-1.png)&lt;!-- --&gt;
+]
+
+
+---
+
+# Tune a random forest
+
+- No cp for random forest (no pruning, each tree is pushed to its maximum)
+
+- We may optimize the number of trees *ntree*
+
+.pull-left[
+
+```r
+plot(rf)
+```
+]
+
+.pull-right[
+![](random_forest_files/figure-html/p5-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Evaluation of the model
+
+- We may now apply our model to the *test* dataset:
+
+
+```r
+# Apply random forest
+pred_rf&lt;-predict(rf, test)
+
+# Add new column with random forest predictions
+test&lt;-test%&gt;%
+  bind_cols(Yield_pred_rf=pred_rf)
+```
+
+---
+
+# Evaluation of the model
+
+- &lt;span style="color:red;font-weight:bold;"&gt;You can now make a plot to compare the monitored and predicted yields for garden pea.&lt;/span&gt;
+
+.pull-left[
+
+```r
+ggplot(test%&gt;%filter(Species=="Garden pea"))+
+  geom_point(
+    aes(x=Yield,y=Yield_pred),
+    color="red"
+  )+
+  geom_point(
+    aes(x=Yield,y=Yield_pred_rf),
+    color="forestgreen"
+  )+
+  labs(
+    subtitle="Red: decision tree, green: random forest",
+    x="Monitored yield",
+    y="Predicted yield"
+  )+
+  theme_light()
+```
+]
+
+.pull-right[
+![](random_forest_files/figure-html/p6-out-1.png)&lt;!-- --&gt;
+]
+
+---
+
+# Evaluation of the model
+
+- Again, we can also compute a R&lt;sup&gt;2&lt;/sup&gt; to evaluate the global performance of the model
+
+
+```r
+LM2&lt;-lm(data=test,Yield_pred_rf~Yield)
+paste('R2 for regression tree:',summary(LM)$r.squared)
+```
+
+```
+## [1] "R2 for regression tree: 0.291277379497764"
+```
+
+```r
+paste('R2 for random forest:',summary(LM2)$r.squared)
+```
+
+```
+## [1] "R2 for random forest: 0.388819652754179"
+```
+
+---
+
+# Decision trees
+
+.pull-left[
+**Advantages**
+- Better predictions
+- Relatively low computational power
+]
+
+.pull-right[
+**Limits**
+- Less understanding of the mechanisms used for classification 
+]
+
+**Another approach:** [Crop model](https://bjnnowak.github.io/Lessons/crop_model_1#/title-slide)
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
